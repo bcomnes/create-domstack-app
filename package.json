@@ -1,0 +1,68 @@
+{
+  "name": "@domstack/create-app",
+  "description": "Create a new DOMStack app",
+  "version": "0.0.0",
+  "author": "Bret Comnes <bcomnes@gmail.com> (https://bret.io)",
+  "bugs": {
+    "url": "https://github.com/bcomnes/create-domstack-app/issues"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@voxpelli/tsconfig": "^16.1.0",
+    "@types/node": "^26.0.0",
+    "neostandard": "^0.13.0",
+    "npm-run-all2": "^9.0.0",
+    "releasearoni": "^0.2.0",
+    "typescript": "~6.0.3"
+  },
+  "engines": {
+    "node": "^22.18.0 || >=24.0.0",
+    "npm": ">=10"
+  },
+  "homepage": "https://github.com/bcomnes/create-domstack-app",
+  "keywords": [
+    "domstack",
+    "scaffold",
+    "static-site-generator"
+  ],
+  "files": [
+    "bin.js",
+    "index.js",
+    "index.d.ts",
+    "index.d.ts.map",
+    "CHANGELOG.md"
+  ],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "module": "index.js",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "bin": {
+    "create-domstack-app": "./bin.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bcomnes/create-domstack-app.git"
+  },
+  "scripts": {
+    "prepublishOnly": "releasearoni",
+    "postpublish": "npm run clean",
+    "test": "run-s test:*",
+    "test:lint": "eslint .",
+    "test:tsc": "tsc",
+    "test:node-test": "node --experimental-test-coverage --test-reporter=spec --test-reporter=lcov --test-reporter-destination=stdout --test-reporter-destination=lcov.info --test",
+    "version": "releasearoni version",
+    "build": "npm run clean && run-p build:*",
+    "build:declaration": "tsc -p declaration.tsconfig.json",
+    "clean": "run-p clean:*",
+    "clean:declarations-top": "rm -rf $(find . -maxdepth 1 -type f -name '*.d.ts*')",
+    "clean:js-top": "rm -rf $(find . -maxdepth 1 -type f -name '*.js' ! -name '*.config.js')"
+  },
+  "funding": {
+    "type": "individual",
+    "url": "https://github.com/sponsors/bcomnes"
+  }
+}

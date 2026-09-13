@@ -1,0 +1,19 @@
+node_modules
+sandbox.js
+.nyc_output
+package-lock.json
+public
+coverage
+lcov.info
+.tap
+
+# Generated types
+
+*.d.ts
+*.d.ts.map
+
+# Generated js
+
+*.js
+!*.config.js
+.claude

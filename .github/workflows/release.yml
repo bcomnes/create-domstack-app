@@ -1,0 +1,58 @@
+name: Version and Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version-type:
+        description: 'Version type'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - custom
+        default: 'patch'
+        required: true
+      new-version:
+        description: 'Custom version (only used when version-type is "custom")'
+        required: false
+
+env:
+  FORCE_COLOR: 3
+
+permissions:
+  contents: write
+  id-token: write # required for OIDC trusted publishing
+
+concurrency: # prevent concurrent releases
+  group: npm-bump
+  cancel-in-progress: true
+
+jobs:
+  version_and_release:
+    runs-on: ubuntu-latest
+    outputs:
+      tagName: ${{ steps.npm-bump.outputs.release-tag }}
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        # Keep the credential because npm-bump pushes the release commit and tag.
+        persist-credentials: true
+        # fetch full history so releasearoni can generate changelogs properly
+        fetch-depth: 0
+    - name: Use Node.js
+      uses: actions/setup-node@v7
+      with:
+        node-version-file: package.json # requires engines.node in package.json
+    - run: npm i
+    - run: npm test
+    - name: Version and publish to npm
+      id: npm-bump
+      uses: bcomnes/npm-bump@v3
+      with:
+        version-type: ${{ github.event.inputs['version-type'] }}
+        new-version: ${{ github.event.inputs['new-version'] }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+    - run: echo "$RELEASE_TAG"
+      env:
+        RELEASE_TAG: ${{ steps.npm-bump.outputs['release-tag'] }}
