@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import {
   existsSync,
   mkdirSync,
@@ -7,13 +7,19 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { basename, dirname, resolve } from 'node:path'
+import { configureDefaults } from './defaults.ts'
+import { dependencyVersion } from './dependencies.ts'
+import { projectDeployment } from './deployment.ts'
+import { projectFeatures } from './template.ts'
+import type { Features } from './template.ts'
 
 export const defaultTargetDirectory = 'domstack-app'
-export const domstackVersion = 'beta'
+export const domstackVersion = dependencyVersion('@domstack/static')
 
-export interface CreateAppOptions {
+export interface CreateAppOptions extends Partial<Features> {
   targetDirectory: string
   install?: boolean
+  eject?: boolean
   packageManager?: PackageManager
 }
 
@@ -22,9 +28,11 @@ export interface CreateAppResult {
   packageName: string
   packageManager: PackageManager
   installed: boolean
+  ejected: boolean
 }
 
-export interface CliOptions {
+export interface CliOptions extends Partial<Features> {
+  yes: boolean
   targetDirectory: string
   install: boolean
   help: boolean
@@ -65,8 +73,37 @@ export function parseArguments (arguments_: string[]): CliOptions {
   let install = true
   let help = false
   let version = false
+  let yes = false
+  const features: Partial<Features> = {}
 
-  for (const argument of arguments_) {
+  for (const [index, argument] of arguments_.entries()) {
+    if (['--language', '--framework', '--deploy'].includes(arguments_[index - 1] ?? '')) continue
+    if (argument === '--deploy') {
+      const value = arguments_[index + 1]
+      if (value !== 'none' && value !== 'github-pages' && value !== 'neocities') throw new Error('--deploy must be none, github-pages, or neocities.')
+      features.deploy = value
+      continue
+    }
+    if (argument === '--language') {
+      const value = arguments_[index + 1]
+      if (value !== 'ts' && value !== 'js') throw new Error('--language must be ts or js.')
+      features.language = value
+      continue
+    }
+    if (argument === '--framework') {
+      const value = arguments_[index + 1]
+      if (value !== 'none' && value !== 'preact' && value !== 'react') throw new Error('--framework must be none, preact, or react.')
+      features.framework = value
+      continue
+    }
+    if (argument === '--tailwind' || argument === '--no-tailwind') {
+      features.tailwind = argument === '--tailwind'
+      continue
+    }
+    if (argument === '--yes' || argument === '-y') {
+      yes = true
+      continue
+    }
     if (argument === '--') continue
     if (argument === '--no-install') {
       install = false
@@ -91,6 +128,8 @@ export function parseArguments (arguments_: string[]): CliOptions {
   }
 
   return {
+    ...features,
+    yes,
     targetDirectory: positionalArguments[0] ?? defaultTargetDirectory,
     install,
     help,
@@ -107,7 +146,9 @@ export function detectPackageManager (
   return 'npm'
 }
 
-export function createApp (options: CreateAppOptions): CreateAppResult {
+export async function createApp (
+  options: CreateAppOptions
+): Promise<CreateAppResult> {
   const targetDirectory = options.targetDirectory.trim()
   if (!targetDirectory) throw new Error('The target directory cannot be empty.')
 
@@ -118,6 +159,15 @@ export function createApp (options: CreateAppOptions): CreateAppResult {
   mkdirSync(directory, { recursive: true })
   const packageManager = options.packageManager ?? detectPackageManager()
   const install = options.install ?? true
+  const eject = options.eject ?? true
+  const features: Features = {
+    language: options.language ?? 'ts',
+    framework: options.framework ?? 'none',
+    tailwind: options.tailwind ?? false,
+    deploy: options.deploy ?? 'none',
+  }
+  const template = projectFeatures(features)
+  const deployment = projectDeployment(features.deploy, features.language)
 
   const packageJson = {
     name: packageName,
@@ -128,8 +178,11 @@ export function createApp (options: CreateAppOptions): CreateAppResult {
       dev: 'domstack --watch',
       build: 'domstack',
       preview: 'domstack --serve',
+      ...template.scripts,
     },
+    dependencies: template.dependencies,
     devDependencies: {
+      ...template.devDependencies,
       '@domstack/static': domstackVersion,
     },
   }
@@ -140,19 +193,27 @@ export function createApp (options: CreateAppOptions): CreateAppResult {
     `${JSON.stringify(packageJson, null, 2)}\n`
   )
 
-  for (const [relativePath, contents] of Object.entries(starterFiles)) {
+  for (const [relativePath, contents] of Object.entries({ ...starterFiles, ...template.files, ...deployment.files })) {
     writeProjectFile(directory, relativePath, contents)
   }
 
-  writeProjectFile(directory, 'README.md', projectReadme(packageName))
+  writeProjectFile(directory, 'README.md', projectReadme(packageName, features) + deployment.readme)
 
-  if (install) installDependencies(directory, packageManager)
+  if (install) {
+    installDependencies(directory, packageManager)
+    if (eject) {
+      await ejectDefaults(directory, packageManager, features.language)
+      configureDefaults(directory, features.language, features.tailwind)
+      installDependencies(directory, packageManager)
+    }
+  }
 
   return {
     directory,
     packageName,
     packageManager,
     installed: install,
+    ejected: install && eject,
   }
 }
 
@@ -207,7 +268,43 @@ function installDependencies (
   })
 }
 
-function projectReadme (packageName: string): string {
+async function ejectDefaults (
+  directory: string,
+  packageManager: PackageManager,
+  language: Features['language']
+): Promise<void> {
+  const flags = ['--eject', '--language', language, '--yes']
+  const argumentsByPackageManager = {
+    npm: ['exec', '--', 'domstack', ...flags],
+    pnpm: ['exec', 'domstack', ...flags],
+    yarn: ['exec', 'domstack', ...flags],
+    bun: ['x', 'domstack', ...flags],
+  }
+
+  const child = spawn(
+    packageManager,
+    argumentsByPackageManager[packageManager],
+    {
+      cwd: directory,
+      stdio: ['ignore', 'inherit', 'inherit'],
+    }
+  )
+
+  await new Promise<void>((resolve, reject) => {
+    child.once('error', reject)
+    child.once('close', (code, signal) => {
+      if (code === 0) {
+        resolve()
+        return
+      }
+
+      const result = signal === null ? `code ${code}` : `signal ${signal}`
+      reject(new Error(`DOMStack eject exited with ${result}.`))
+    })
+  })
+}
+
+function projectReadme (packageName: string, features: Features): string {
   return `# ${packageName}
 
 A static site built with [DOMStack](https://github.com/bcomnes/domstack).
@@ -225,5 +322,9 @@ npm run build
 \`\`\`
 
 The generated site is written to \`public/\`.
+With default setup, \`src/layouts/\` and \`src/globals/\` contain customizable DOMStack defaults.
+If setup used \`--no-install\`, run \`npm install\`, \`npx domstack --eject --language ${features.language} --yes\`, and \`npm install\` to eject them and install their dependencies.
+${features.tailwind ? 'Eject replaces `src/globals/global.css`; after manual eject, restore its contents to `@import "tailwindcss" source("../");` before building.\n' : ''}Only eject into a fresh project: eject overwrites the default layout, stylesheet, and client files.
+This setup requires a DOMStack release supporting \`--eject --language ts|js --yes\`.
 `
 }
