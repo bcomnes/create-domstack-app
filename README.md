@@ -39,10 +39,8 @@ The target directory defaults to `domstack-app` and must be empty if it already 
 
 ### Upstream release requirement
 
-This implementation requires DOMStack's new `--eject --language ts|js --yes` interface from `feat/typescript-default-eject`.
-The declared registry range remains unchanged; the currently declared `^12.0.0-beta.5` is not a guarantee that the resolved published package contains those flags.
-Before publishing this generator, update its DOMStack dependency to a verified published release containing that interface and repeat the integration checks.
-No future release version is assumed here.
+The minimum supported DOMStack release is `12.0.0-beta.9`, verified on npm to support `--eject --language ts|js --yes` after upstream PR #320 merged.
+The generator declares `@domstack/static` as `^12.0.0-beta.9`.
 
 To create the starter files without installing dependencies or ejecting DOMStack's defaults:
 
@@ -155,13 +153,17 @@ Dependencies added by DOMStack's eject command remain controlled by DOMStack its
 
 ```sh
 npm test
+npm run smoke:registry
 npm run smoke:local -- ../domstack
 ```
+
+The registry smoke check builds and packs this generator, installs the packed CLI, and creates all six projects using actual published dependencies, with no local npm wrapper or manifest modifications.
+It reports the installed DOMStack version and checks builds, TS typechecking, Tailwind output, and GitHub Pages asset prefixes.
 
 The optional local smoke check requires a DOMStack checkout with development dependencies installed and the new eject interface.
 It builds declarations in a disposable upstream copy (never in that checkout), builds and packs this generator, installs the packed CLI, and creates six projects covering JS/TS, no JSX/Preact/React, Tailwind, and all deployment selections.
 It installs a local packed DOMStack through a temporary npm wrapper without changing the generated registry dependency range, then checks builds, TS typechecking, Tailwind output, and GitHub Pages asset prefixes.
-The check installs dependencies from npm, requires network access unless cached, and does not deploy anything.
+Both checks install dependencies from npm, require network access unless cached, and do not deploy anything.
 Temporary projects and generated declaration/JavaScript build outputs are cleaned afterward.
 
 ## License

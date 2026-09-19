@@ -10,7 +10,7 @@
   "devDependencies": {
     "@voxpelli/tsconfig": "^16.1.0",
     "@types/node": "^26.0.1",
-    "@domstack/static": "^12.0.0-beta.5",
+    "@domstack/static": "^12.0.0-beta.9",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
     "preact": "^10.29.6",
@@ -72,6 +72,7 @@
     "test:node-test": "node --experimental-test-coverage --test-reporter=spec --test-reporter=lcov --test-reporter-destination=stdout --test-reporter-destination=lcov.info --test",
     "version": "releasearoni version",
     "smoke:local": "node smoke.ts",
+        "smoke:registry": "node smoke.ts --registry",
     "build": "npm run clean && run-p build:*",
     "build:declaration": "tsc -p declaration.tsconfig.json",
     "clean": "run-p clean:*",

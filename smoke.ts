@@ -5,11 +5,11 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 
 const upstreamArgument = process.argv[2]
-if (!upstreamArgument) throw new Error('Usage: npm run smoke:local -- /path/to/domstack (with its development dependencies installed)')
-const upstream = resolve(upstreamArgument)
+if (!upstreamArgument) throw new Error('Usage: npm run smoke:registry or npm run smoke:local -- /path/to/domstack (with its development dependencies installed)')
+const registry = upstreamArgument === '--registry'
 const root = import.meta.dirname
 const npm = process.env['npm_execpath']
-if (!npm) throw new Error('Run this smoke check with npm run smoke:local.')
+if (!npm) throw new Error('Run this smoke check with npm run smoke:local or npm run smoke:registry.')
 const temporary = mkdtempSync(join(tmpdir(), 'domstack-packed-smoke-'))
 
 function run (args: string[], cwd: string, env = process.env): void {
@@ -24,15 +24,19 @@ function pack (cwd: string): string {
 }
 
 try {
-  // Build only a disposable upstream copy; never emit into the upstream checkout.
-  const copy = join(temporary, 'upstream')
-  mkdirSync(copy)
-  for (const path of ['bin.js', 'index.js', 'types.ts', 'types', 'lib', 'package.json', 'tsconfig.json', 'declaration.tsconfig.json']) {
-    cpSync(join(upstream, path), join(copy, path), { recursive: true })
+  let upstreamTarball: string | undefined
+  if (!registry) {
+    const upstream = resolve(upstreamArgument)
+    // Build only a disposable upstream copy; never emit into the upstream checkout.
+    const copy = join(temporary, 'upstream')
+    mkdirSync(copy)
+    for (const path of ['bin.js', 'index.js', 'types.ts', 'types', 'lib', 'package.json', 'tsconfig.json', 'declaration.tsconfig.json']) {
+      cpSync(join(upstream, path), join(copy, path), { recursive: true })
+    }
+    symlinkSync(join(upstream, 'node_modules'), join(copy, 'node_modules'), 'dir')
+    run(['run', 'build:declaration'], copy)
+    upstreamTarball = pack(copy)
   }
-  symlinkSync(join(upstream, 'node_modules'), join(copy, 'node_modules'), 'dir')
-  run(['run', 'build:declaration'], copy)
-  const upstreamTarball = pack(copy)
   run(['run', 'build'], root)
   const generatorTarball = pack(root)
   const consumer = join(temporary, 'consumer')
@@ -60,12 +64,14 @@ void result
     cwd: consumer, stdio: 'inherit', timeout: 120_000,
   })
 
-  // Override only the install command in this test environment, preserving the
-  // generated registry range while installing the unpublished local tarball.
-  const bin = join(temporary, 'bin')
-  mkdirSync(bin)
-  const wrapper = join(bin, 'npm')
-  writeFileSync(wrapper, `#!${process.execPath}
+  const env: NodeJS.ProcessEnv = { ...process.env, npm_config_user_agent: 'npm/11' }
+  if (!registry) {
+    // Override only the install command in this test environment, preserving the
+    // generated registry range while installing the unpublished local tarball.
+    const bin = join(temporary, 'bin')
+    mkdirSync(bin)
+    const wrapper = join(bin, 'npm')
+    writeFileSync(wrapper, `#!${process.execPath}
 const { spawnSync } = require('node:child_process')
 const args = process.argv.slice(2)
 if (args[0] === 'install') args.push('--no-save', '--no-audit', '--no-fund', ${JSON.stringify(upstreamTarball)})
@@ -73,8 +79,9 @@ const result = spawnSync(${JSON.stringify(process.execPath)}, [${JSON.stringify(
 if (result.error) throw result.error
 process.exit(result.status ?? 1)
 `)
-  chmodSync(wrapper, 0o755)
-  const env = { ...process.env, PATH: `${bin}:${process.env['PATH'] ?? ''}`, npm_config_user_agent: 'npm/11' }
+    chmodSync(wrapper, 0o755)
+    env['PATH'] = `${bin}:${process.env['PATH'] ?? ''}`
+  }
   const cases = [
     { language: 'ts', framework: 'none', tailwind: false, deploy: 'none' },
     { language: 'js', framework: 'none', tailwind: false, deploy: 'none' },
@@ -92,6 +99,12 @@ process.exit(result.status ?? 1)
     })
     const generatedManifest = JSON.parse(readFileSync(join(directory, 'package.json'), 'utf8'))
     assert.equal(generatedManifest.devDependencies['@domstack/static'], range)
+    if (registry) {
+      const installed = JSON.parse(readFileSync(join(directory, 'node_modules/@domstack/static/package.json'), 'utf8'))
+      console.log(`Installed @domstack/static: ${installed.version}`)
+      const lock = JSON.parse(readFileSync(join(directory, 'package-lock.json'), 'utf8'))
+      assert.match(lock.packages['node_modules/@domstack/static'].resolved, /^https:\/\/registry\.npmjs\.org\//)
+    }
     const layout = readFileSync(join(directory, `src/layouts/root.layout.${language}`), 'utf8')
     assert.ok(layout.includes('defaultRootLayout'))
     assert.ok(existsSync(join(directory, `src/globals/global.client.${language}`)))
@@ -116,7 +129,7 @@ process.exit(result.status ?? 1)
       assert.doesNotMatch(html, /\/example-repo\/\//)
     }
   }
-  console.log('\nPacked generator and local upstream integration passed (6 projects).')
+  console.log(`\nPacked generator and ${registry ? 'registry' : 'local upstream'} integration passed (6 projects).`)
 } finally {
   run(['run', 'clean'], root)
   rmSync(temporary, { recursive: true, force: true })
