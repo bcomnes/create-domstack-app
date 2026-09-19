@@ -8,7 +8,11 @@ updates:
       interval: "daily"
     cooldown:
       default-days: 1
-    versioning-strategy: increase
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
     groups:
       typescript:
         patterns:
