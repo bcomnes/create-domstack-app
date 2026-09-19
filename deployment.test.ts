@@ -51,6 +51,7 @@ for (const language of languages) {
       } else {
         assert.ok(readme.endsWith(result.readme))
         const workflow = result.files[`.github/workflows/${deploy}.yml`] ?? ''
+        assert.ok(workflow.includes('uses: actions/checkout@v4\n        with:\n          persist-credentials: false'))
         assert.match(workflow, /branches: \[main\]/)
         assert.match(workflow, /workflow_dispatch:/)
         assert.match(workflow, /run: npm install/)

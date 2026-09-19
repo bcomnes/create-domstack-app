@@ -3,6 +3,8 @@ import type { Language } from './template.ts'
 export type Deployment = 'none' | 'github-pages' | 'neocities'
 
 const buildSteps = `      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
