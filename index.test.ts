@@ -12,6 +12,7 @@ import test from 'node:test'
 import {
   createApp,
   defaultTargetDirectory,
+  domstackVersion,
   detectPackageManager,
   packageManagerRunCommand,
   parseArguments,
@@ -21,12 +22,12 @@ function temporaryDirectory (): string {
   return mkdtempSync(join(tmpdir(), 'create-domstack-app-'))
 }
 
-test('creates a DOMStack project without installing dependencies', (t) => {
+test('creates a DOMStack project without installing dependencies', async (t) => {
   const parentDirectory = temporaryDirectory()
   t.after(() => rmSync(parentDirectory, { recursive: true, force: true }))
 
   const targetDirectory = join(parentDirectory, 'My Site')
-  const result = createApp({
+  const result = await createApp({
     targetDirectory,
     install: false,
     packageManager: 'npm',
@@ -38,9 +39,10 @@ test('creates a DOMStack project without installing dependencies', (t) => {
 
   assert.equal(result.packageName, 'my-site')
   assert.equal(result.installed, false)
+  assert.equal(result.ejected, false)
   assert.equal(packageJson.name, 'my-site')
   assert.equal(packageJson.private, true)
-  assert.equal(packageJson.devDependencies['@domstack/static'], 'beta')
+  assert.equal(packageJson.devDependencies['@domstack/static'], domstackVersion)
   assert.equal(packageJson.scripts.dev, 'domstack --watch')
   assert.match(
     readFileSync(join(targetDirectory, 'src/page.md'), 'utf8'),
@@ -52,35 +54,35 @@ test('creates a DOMStack project without installing dependencies', (t) => {
   )
 })
 
-test('normalizes a dot-prefixed target name', (t) => {
+test('normalizes a dot-prefixed target name', async (t) => {
   const parentDirectory = temporaryDirectory()
   t.after(() => rmSync(parentDirectory, { recursive: true, force: true }))
 
   const targetDirectory = join(parentDirectory, '.preview-app')
-  const result = createApp({ targetDirectory, install: false })
+  const result = await createApp({ targetDirectory, install: false })
 
   assert.equal(result.packageName, 'preview-app')
 })
 
-test('validates the package name before creating a directory', (t) => {
+test('validates the package name before creating a directory', async (t) => {
   const parentDirectory = temporaryDirectory()
   t.after(() => rmSync(parentDirectory, { recursive: true, force: true }))
 
   const targetDirectory = join(parentDirectory, '!!!')
-  assert.throws(
-    () => createApp({ targetDirectory, install: false }),
+  await assert.rejects(
+    createApp({ targetDirectory, install: false }),
     /Cannot derive a valid package name/
   )
   assert.equal(existsSync(targetDirectory), false)
 })
 
-test('refuses to write into a non-empty directory', (t) => {
+test('refuses to write into a non-empty directory', async (t) => {
   const targetDirectory = temporaryDirectory()
   t.after(() => rmSync(targetDirectory, { recursive: true, force: true }))
   writeFileSync(join(targetDirectory, 'existing.txt'), 'keep me')
 
-  assert.throws(
-    () => createApp({ targetDirectory, install: false }),
+  await assert.rejects(
+    createApp({ targetDirectory, install: false }),
     /target directory is not empty/
   )
   assert.equal(readFileSync(join(targetDirectory, 'existing.txt'), 'utf8'), 'keep me')
@@ -88,12 +90,14 @@ test('refuses to write into a non-empty directory', (t) => {
 
 test('parses CLI arguments', () => {
   assert.deepEqual(parseArguments([]), {
+    yes: false,
     targetDirectory: defaultTargetDirectory,
     install: true,
     help: false,
     version: false,
   })
   assert.deepEqual(parseArguments(['website', '--no-install']), {
+    yes: false,
     targetDirectory: 'website',
     install: false,
     help: false,
