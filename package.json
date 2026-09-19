@@ -1,7 +1,7 @@
 {
   "name": "@domstack/create-app",
   "description": "Create a new DOMStack app",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "author": "Bret Comnes <bcomnes@gmail.com> (https://bret.io)",
   "bugs": {
     "url": "https://github.com/bcomnes/create-domstack-app/issues"
@@ -72,7 +72,7 @@
     "test:node-test": "node --experimental-test-coverage --test-reporter=spec --test-reporter=lcov --test-reporter-destination=stdout --test-reporter-destination=lcov.info --test",
     "version": "releasearoni version",
     "smoke:local": "node smoke.ts",
-        "smoke:registry": "node smoke.ts --registry",
+    "smoke:registry": "node smoke.ts --registry",
     "build": "npm run clean && run-p build:*",
     "build:declaration": "tsc -p declaration.tsconfig.json",
     "clean": "run-p clean:*",
