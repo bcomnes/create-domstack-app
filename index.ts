@@ -80,7 +80,7 @@ export function parseArguments (arguments_: string[]): CliOptions {
     if (['--language', '--framework', '--deploy'].includes(arguments_[index - 1] ?? '')) continue
     if (argument === '--deploy') {
       const value = arguments_[index + 1]
-      if (value !== 'none' && value !== 'github-pages' && value !== 'neocities' && value !== 'wix' && value !== 'cloudflare' && value !== 'vercel') throw new Error('--deploy must be none, github-pages, neocities, wix, cloudflare, or vercel.')
+      if (value !== 'none' && value !== 'github-pages' && value !== 'neocities' && value !== 'wix' && value !== 'cloudflare' && value !== 'vercel' && value !== 'netlify') throw new Error('--deploy must be none, github-pages, neocities, wix, cloudflare, vercel, or netlify.')
       features.deploy = value
       continue
     }

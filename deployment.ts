@@ -2,7 +2,7 @@ import type { Language } from './template.ts'
 import { dependencyVersion } from './dependencies.ts'
 import { wixAgentNotes } from './wix-agents.ts'
 
-export type Deployment = 'none' | 'github-pages' | 'neocities' | 'wix' | 'cloudflare' | 'vercel'
+export type Deployment = 'none' | 'github-pages' | 'neocities' | 'wix' | 'cloudflare' | 'vercel' | 'netlify'
 
 const buildSteps = `      - uses: actions/checkout@v4
         with:
@@ -82,6 +82,75 @@ The ejected root layout prefixes root-relative script and stylesheet URLs with \
 Local builds default to an empty base path.
 DOMStack does not automatically rewrite links or image URLs in page content; use relative URLs or incorporate \`vars.basePath\` in rendered content where needed.
 For a custom domain, configure it in Settings → Pages before deploying.
+`,
+    }
+  }
+
+  if (deploy === 'netlify') {
+    return {
+      scripts: {
+        'netlify:login': 'netlify login',
+        netlify: 'netlify',
+        deploy: 'netlify deploy --prod --context production',
+      },
+      devDependencies: { 'netlify-cli': dependencyVersion('netlify-cli') },
+      engines: { node: '>=22.13.0' },
+      files: {
+        '.gitignore': `node_modules
+public
+.DS_Store
+.env*
+.netlify/
+`,
+        'netlify.toml': `[build]
+  command = "npm run build"
+  publish = "public"
+`,
+        '.github/workflows/netlify.yml': `name: Deploy to Netlify
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: netlify
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+${buildSteps}      - run: npm run deploy
+        env:
+          NETLIFY_AUTH_TOKEN: \${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: \${{ secrets.NETLIFY_SITE_ID }}
+`,
+      },
+      readme: `
+## Netlify deployment
+
+This project uses the local Netlify CLI and \`netlify.toml\` to build with \`npm run build\` and publish \`public\`.
+The CLI requires Node.js 22.13.0 or newer; the generated workflow uses Node.js 24.
+Create or select the intended site in Netlify, run \`npm run netlify:login\`, and link it with \`npm run netlify -- link\`.
+Run \`npm run deploy\` to build locally and publish to production using the production environment context.
+The current CLI builds during \`netlify deploy\` by default, so do not add a second build step unless you deliberately deploy already built output with \`--no-build\`.
+For a draft deployment instead, run \`npm run netlify -- deploy\` without \`--prod\`.
+Scaffolding does not log in, create or link a Netlify site, or deploy anything.
+
+For GitHub Actions, add repository Actions secrets \`NETLIFY_AUTH_TOKEN\` and \`NETLIFY_SITE_ID\`.
+Create the token in Netlify user settings and obtain the site/project ID from Netlify's project settings or \`.netlify/state.json\` after linking.
+The site ID is an identifier, not an authentication credential.
+Keep tokens, \`.netlify/\`, and \`.env*\` out of Git and public output.
+Commit \`netlify.toml\` and \`.github/workflows/netlify.yml\` once the site and secrets are ready.
+${workflowNotes}
+The workflow invokes \`npm run deploy\`, letting Netlify CLI read the build command and publish directory from \`netlify.toml\`.
+No SPA catch-all or server runtime is added; DOMStack's generated pages are served as static files.
+If the repository also uses Netlify's native Git deployment, choose one deployment mechanism to avoid duplicate production deployments.
+See [Netlify CLI setup](https://docs.netlify.com/api-and-cli-guides/cli-guides/get-started-with-cli/) and [deploy command](https://cli.netlify.com/commands/deploy/).
 `,
     }
   }

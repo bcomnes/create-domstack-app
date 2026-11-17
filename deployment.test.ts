@@ -9,7 +9,7 @@ import type { Deployment } from './deployment.ts'
 import type { Language } from './template.ts'
 import { dependencyVersion } from './dependencies.ts'
 
-const deployments: Deployment[] = ['none', 'github-pages', 'neocities', 'wix', 'cloudflare', 'vercel']
+const deployments: Deployment[] = ['none', 'github-pages', 'neocities', 'wix', 'cloudflare', 'vercel', 'netlify']
 const languages: Language[] = ['ts', 'js']
 
 test('parses deployment and feature flags, rejecting missing and invalid values', () => {
@@ -48,6 +48,7 @@ for (const language of languages) {
       assert.equal(manifest.devDependencies['@wix/cli'], deploy === 'wix' ? dependencyVersion('@wix/cli') : undefined)
       assert.equal(manifest.devDependencies.wrangler, deploy === 'cloudflare' ? dependencyVersion('wrangler') : undefined)
       assert.equal(manifest.devDependencies.vercel, deploy === 'vercel' ? dependencyVersion('vercel') : undefined)
+      assert.equal(manifest.devDependencies['netlify-cli'], deploy === 'netlify' ? dependencyVersion('netlify-cli') : undefined)
       assert.equal(existsSync(join(directory, 'AGENTS.md')), deploy === 'wix')
       assert.ok(readme.includes(`--eject --language ${language} --yes`))
       assert.match(readme, /after manual eject, restore/)
@@ -63,7 +64,7 @@ for (const language of languages) {
         assert.match(workflow, /branches: \[main\]/)
         assert.match(workflow, /workflow_dispatch:/)
         assert.match(workflow, /run: npm install/)
-        if (deploy !== 'cloudflare' && deploy !== 'vercel') assert.match(workflow, /run: npm run build/)
+        if (!['cloudflare', 'vercel', 'netlify'].includes(deploy)) assert.match(workflow, /run: npm run build/)
         assert.match(workflow, /cancel-in-progress: false/)
         if (deploy === 'github-pages') {
           assert.match(workflow, /pages: write/)
@@ -83,6 +84,21 @@ for (const language of languages) {
             const { default: vars } = await import(`data:text/javascript,${encodeURIComponent(source)}#${String(input)}`)
             assert.equal(vars.basePath, expected)
           }
+        } else if (deploy === 'netlify') {
+          const config = readFileSync(join(directory, 'netlify.toml'), 'utf8')
+          assert.match(config, /^\[build\]$/m)
+          assert.match(config, /command = "npm run build"/)
+          assert.match(config, /publish = "public"/)
+          assert.doesNotMatch(config, /redirects|functions/)
+          assert.equal(manifest.scripts.deploy, 'netlify deploy --prod --context production')
+          assert.equal(manifest.engines.node, '>=22.13.0')
+          for (const secret of ['NETLIFY_AUTH_TOKEN', 'NETLIFY_SITE_ID']) {
+            assert.ok(workflow.includes(`${secret}: \${{ secrets.${secret} }}`))
+          }
+          assert.match(workflow, /run: npm run deploy/)
+          assert.doesNotMatch(workflow, /run: npm run build/)
+          assert.match(readFileSync(join(directory, '.gitignore'), 'utf8'), /^\.netlify\/$/m)
+          assert.match(readme, /builds during/)
         } else if (deploy === 'vercel') {
           const config = JSON.parse(readFileSync(join(directory, 'vercel.json'), 'utf8'))
           assert.equal(config.framework, null)

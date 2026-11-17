@@ -41,7 +41,7 @@ export async function chooseFeatures (options: CliOptions): Promise<Features> {
     const language = options.language ?? await choose('Language: 1) TypeScript  2) JavaScript [1]: ', ['ts', 'js'], 'ts')
     const framework = options.framework ?? await choose('JSX/TSX: 1) None  2) Preact (recommended)  3) React [1]: ', ['none', 'preact', 'react'], 'none')
     const tailwind = options.tailwind ?? await confirm('Set up Tailwind CSS?', defaults.tailwind)
-    const deploy = options.deploy ?? await choose('Deployment: 1) None  2) GitHub Pages  3) Neocities  4) Wix  5) Cloudflare  6) Vercel [1]: ', ['none', 'github-pages', 'neocities', 'wix', 'cloudflare', 'vercel'], 'none')
+    const deploy = options.deploy ?? await choose('Deployment: 1) None  2) GitHub Pages  3) Neocities  4) Wix  5) Cloudflare  6) Vercel  7) Netlify [1]: ', ['none', 'github-pages', 'neocities', 'wix', 'cloudflare', 'vercel', 'netlify'], 'none')
     return { language, framework, tailwind, deploy }
   } catch (error) {
     if (controller.signal.aborted) throw new Error('Setup cancelled; no files were created.')

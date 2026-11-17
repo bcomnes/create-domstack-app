@@ -71,6 +71,8 @@ test('interactive defaults, numbered choices, retry, and explicit-flag skipping'
   assert.equal((await chooseFeatures({ ...parseArguments(['--language', 'ts', '--framework', 'none']), tailwind: false })).deploy, 'cloudflare')
   answers = ['6']
   assert.equal((await chooseFeatures({ ...parseArguments(['--language', 'ts', '--framework', 'none']), tailwind: false })).deploy, 'vercel')
+  answers = ['7']
+  assert.equal((await chooseFeatures({ ...parseArguments(['--language', 'ts', '--framework', 'none']), tailwind: false })).deploy, 'netlify')
 })
 
 test('boolean prompts accept case-insensitive yes/no, default on Enter, and reject numbers', async (t) => {
