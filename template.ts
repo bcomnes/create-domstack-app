@@ -20,13 +20,29 @@ export function projectFeatures (features: Omit<Features, 'deploy'>): {
   const { language, framework, tailwind } = features
   const files: Record<string, string> = {}
   const dependencies: Record<string, string> = {}
-  const devDependencies: Record<string, string> = {}
-  const scripts: Record<string, string> = {}
+  const devDependencies: Record<string, string> = {
+    'npm-run-all2': dependencyVersion('npm-run-all2'),
+    eslint: dependencyVersion('eslint'),
+    neostandard: dependencyVersion('neostandard'),
+  }
+  const scripts: Record<string, string> = {
+    test: 'run-s test:*',
+    'test:eslint': 'eslint .',
+    'test:node': 'node --test',
+  }
+  files['eslint.config.js'] = `import neostandard, { resolveIgnoresFromGitignore } from 'neostandard'
+
+export default neostandard({
+  ts: ${language === 'ts'},
+  env: ['browser'],
+  ignores: resolveIgnoresFromGitignore(),
+})
+`
 
   if (language === 'ts') {
     devDependencies['typescript'] = dependencyVersion('typescript')
     devDependencies['@types/node'] = dependencyVersion('@types/node')
-    scripts['typecheck'] = 'tsc --noEmit'
+    scripts['test:typecheck'] = 'tsc --noEmit'
     files['tsconfig.json'] = `${JSON.stringify({
       compilerOptions: {
         target: 'ES2024',
@@ -123,17 +139,18 @@ ${jsxSettings}${pluginSettings}  return settings
     const imports = framework === 'preact'
       ? "import { render } from 'preact'\nimport { useState } from 'preact/hooks'"
       : "import { useState } from 'react'\nimport { createRoot } from 'react-dom/client'"
-    const buttonClasses = tailwind ? ' className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"' : ''
+    const buttonClasses = tailwind ? " className='rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700'" : ''
     const mount = framework === 'preact'
       ? 'render(<Counter />, container)'
       : 'createRoot(container).render(<Counter />)'
-    files[`src/interactive/client.${extension}`] = `${imports}
+    files[`src/interactive/client.${extension}`] = `/// <reference lib="dom" />
+${imports}
 
 function Counter () {
   const [count, setCount] = useState(0)
 
   return (
-    <button type="button"${buttonClasses} onClick={() => setCount(value => value + 1)}>
+    <button type='button'${buttonClasses} onClick={() => setCount(value => value + 1)}>
       Count: {count}
     </button>
   )

@@ -1,4 +1,4 @@
-import { writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { projectFeatures } from './template.ts'
 
@@ -8,6 +8,11 @@ export function configureDefaults (
   language: 'ts' | 'js',
   tailwind: boolean
 ): void {
+  if (language === 'js') {
+    const layout = resolve(directory, 'src/layouts/root.layout.js')
+    // The compiled default escapes closing script tags unnecessarily in strings.
+    writeFileSync(layout, readFileSync(layout, 'utf8').replaceAll('<\\/script>', '</script>'))
+  }
   if (!tailwind) return
 
   const { files } = projectFeatures({ language, framework: 'none', tailwind })

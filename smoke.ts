@@ -127,7 +127,7 @@ process.exit(result.status ?? 1)
       assert.ok(stylesheet)
       assert.match(readFileSync(join(directory, 'public', stylesheet), 'utf8'), /\.bg-blue-600/)
     }
-    if (language === 'ts') run(['run', 'typecheck'], directory)
+    run(['test'], directory)
     if (deploy === 'github-pages') {
       run(['run', 'build'], directory, { ...process.env, DOMSTACK_BASE_PATH: '/example-repo/' })
       const html = readFileSync(join(directory, 'public/interactive/index.html'), 'utf8')

@@ -177,7 +177,7 @@ export async function createApp (
     scripts: {
       start: 'domstack --watch',
       build: 'domstack',
-      'production-preview': 'domstack --serve',
+      preview: 'domstack --serve',
       ...template.scripts,
       ...deployment.scripts,
     },
@@ -208,6 +208,12 @@ export async function createApp (
       await ejectDefaults(directory, packageManager, features.language)
       configureDefaults(directory, features.language, features.tailwind)
       installDependencies(directory, packageManager)
+      if (features.language === 'js') {
+        execFileSync(process.execPath, [resolve(directory, 'node_modules/eslint/bin/eslint.js'), 'src/layouts/root.layout.js', '--fix'], {
+          cwd: directory,
+          stdio: 'inherit',
+        })
+      }
     }
   }
 
@@ -318,10 +324,19 @@ A static site built with [DOMStack](https://github.com/bcomnes/domstack).
 npm start
 \`\`\`
 
+## Tests
+
+\`\`\`sh
+npm test
+\`\`\`
+
+Runs ESLint, Node tests${features.language === 'ts' ? ', and TypeScript checks' : ''}.
+Add individual checks as \`test:*\` scripts to include them in \`npm test\`.
+
 ## Production preview
 
 \`\`\`sh
-npm run production-preview
+npm run preview
 \`\`\`
 
 Builds and serves production output without watching for changes.
@@ -335,7 +350,7 @@ npm run build
 The generated site is written to \`public/\`.
 With default setup, \`src/layouts/\` and \`src/globals/\` contain customizable DOMStack defaults.
 If setup used \`--no-install\`, run \`npm install\`, \`npx domstack --eject --language ${features.language} --yes\`, and \`npm install\` to eject them and install their dependencies.
-${features.tailwind ? 'Eject replaces `src/globals/global.css`; after manual eject, restore its contents to `@import "tailwindcss" source("../");` before building.\n' : ''}Only eject into a fresh project: eject overwrites the default layout, stylesheet, and client files.
+${features.tailwind ? 'Eject replaces `src/globals/global.css`; after manual eject, restore its contents to `@import "tailwindcss" source("../");` before building.\n' : ''}${features.language === 'js' ? 'For manual JavaScript setup, remove the unnecessary slash escape in the ejected layout’s closing script string, then run `npx eslint src/layouts/root.layout.js --fix`.\n' : ''}Only eject into a fresh project: eject overwrites the default layout, stylesheet, and client files.
 This setup requires a DOMStack release supporting \`--eject --language ts|js --yes\`.
 `
 }

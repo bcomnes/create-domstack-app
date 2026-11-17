@@ -20,8 +20,14 @@ for (const packageManager of managers) {
       t.after(() => rmSync(directory, { recursive: true, force: true }))
       const calls: string[][] = []
       const install = t.mock.method(childProcess, 'execFileSync', (command: string, args: string[], options: { cwd: string }) => {
-        assert.equal(command, packageManager)
         assert.equal(options.cwd, directory)
+        if (command === process.execPath) {
+          assert.equal(language, 'js')
+          assert.deepEqual(args.slice(1), ['src/layouts/root.layout.js', '--fix'])
+          assert.ok(args[0]?.endsWith('node_modules/eslint/bin/eslint.js'))
+          return
+        }
+        assert.equal(command, packageManager)
         calls.push(args)
       })
       const spawn = t.mock.method(childProcess, 'spawn', (command: string, args: string[], options: { cwd: string, stdio: string[] }) => {

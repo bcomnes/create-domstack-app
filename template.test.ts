@@ -15,8 +15,15 @@ for (const language of languages) {
       test(`${language}/${framework}/tailwind=${tailwind}`, () => {
         const result = projectFeatures({ language, framework, tailwind })
         const { files, dependencies, devDependencies, scripts } = result
+        assert.equal(scripts['test'], 'run-s test:*')
+        assert.equal(scripts['test:eslint'], 'eslint .')
+        assert.equal(scripts['test:node'], 'node --test')
+        for (const name of ['npm-run-all2', 'eslint', 'neostandard']) {
+          assert.equal(devDependencies[name], versions[name])
+        }
+        assert.match(files['eslint.config.js'] ?? '', /resolveIgnoresFromGitignore/)
         assert.equal(Boolean(files['tsconfig.json']), language === 'ts')
-        assert.equal(Boolean(scripts['typecheck']), language === 'ts')
+        assert.equal(Boolean(scripts['test:typecheck']), language === 'ts')
         if (language === 'ts') {
           const config = JSON.parse(files['tsconfig.json'] ?? '')
           assert.equal(config.extends, undefined)

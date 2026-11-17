@@ -56,10 +56,14 @@ Choosing Preact or React also adds an example at `/interactive/`.
 
 ```sh
 npm start        # Build and watch for changes
-npm run build      # Build into public/
-npm run production-preview    # Build and serve production output locally
-npm run typecheck  # Check types (TypeScript projects)
+npm run build    # Build into public/
+npm run preview  # Build and serve production output locally
+npm test         # Run all checks
 ```
+
+Tests run through `npm-run-all2` using the `test:*` scripts: ESLint, Node's test runner, and type checking for TypeScript projects.
+Add your tests using Node's usual `*.test.js` or `*.test.ts` filenames.
+You can run a check on its own with `npm run test:eslint`, `npm run test:node`, or `npm run test:typecheck` (TypeScript only).
 
 See the [DOMStack docs](https://domstack.net) for pages, layouts, assets, and configuration.
 
@@ -125,7 +129,8 @@ npx domstack --eject --language ts --yes
 npm install
 ```
 
-Use `--language js` for a JavaScript project.
+Use `--language js` for a JavaScript project, then run `npx eslint src/layouts/root.layout.js --fix` to format the ejected layout.
+If ESLint reports an unnecessary escape in `</script>`, remove the backslash before the slash.
 The eject command writes the default layout, stylesheet, and client script, so run it before customizing those files.
 If you selected Tailwind, restore `src/globals/global.css` afterward to:
 

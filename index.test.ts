@@ -44,9 +44,9 @@ test('creates a DOMStack project without installing dependencies', async (t) => 
   assert.equal(packageJson.private, true)
   assert.equal(packageJson.devDependencies['@domstack/static'], domstackVersion)
   assert.equal(packageJson.scripts.start, 'domstack --watch')
-  assert.equal(packageJson.scripts['production-preview'], 'domstack --serve')
+  assert.equal(packageJson.scripts.preview, 'domstack --serve')
   assert.equal(packageJson.scripts.dev, undefined)
-  assert.equal(packageJson.scripts.preview, undefined)
+  assert.equal(packageJson.scripts['production-preview'], undefined)
   assert.match(
     readFileSync(join(targetDirectory, 'src/page.md'), 'utf8'),
     /Welcome to DOMStack/
