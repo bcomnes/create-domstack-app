@@ -13,7 +13,7 @@ npm create @domstack/app@latest my-app
 ```
 
 The npm `create` convention maps `@domstack/app` to this package, `@domstack/create-app`.
-In an interactive terminal, the command asks for the source language (TypeScript by default), browser JSX runtime (none by default, Preact recommended when wanted, or React), Tailwind CSS (off by default), and deployment (none by default, GitHub Pages, or Neocities).
+In an interactive terminal, the command asks for the source language (TypeScript by default), browser JSX runtime (none by default, Preact recommended when wanted, or React), Tailwind CSS (off by default), and deployment (none by default, GitHub Pages, Neocities, or Wix).
 Explicit flags skip their corresponding questions.
 Use `--yes` to skip all questions; non-interactive input also uses defaults for unspecified choices.
 The command creates the project, installs its dependencies, and ejects DOMStack's customizable default layout, global stylesheet, and client script in the selected language.
@@ -29,7 +29,7 @@ npm create @domstack/app@latest my-app -- --yes --language ts --framework preact
 | `--language` | `ts` (default), `js` |
 | `--framework` | `none` (default), `preact`, `react` |
 | `--tailwind` / `--no-tailwind` | Enable / disable Tailwind CSS (default: disabled) |
-| `--deploy` | `none` (default), `github-pages`, `neocities` |
+| `--deploy` | `none` (default), `github-pages`, `neocities`, `wix` |
 | `-y`, `--yes` | Skip prompts, retaining explicit choices |
 | `--no-install` | Write starter files without installing or ejecting |
 | `-h`, `--help` | Show usage |
@@ -109,7 +109,19 @@ Add your site's Neocities API key as the repository Actions secret `NEOCITIES_AP
 The workflow uploads `public/`, preserves orphaned remote files (`cleanup: false`), and leaves Supporter-only file support disabled.
 Enable those settings only when appropriate for your site and account.
 
-Both workflows run on pushes to `main` or manual dispatch, build with Node.js 24, and serialize deployments without cancelling an active deployment.
+`--deploy wix` adds the local `@wix/cli` dev dependency, `wix:login`, `wix`, and `deploy` scripts, and `.github/workflows/wix.yml`.
+It also generates `AGENTS.md` with numbered compatibility notes covering the static build/release flow, favicon interception, video range requests and Safari playback, credential handling, optional business SDK integration, migration identities, and hosted verification.
+The generated project's Node requirement is `>=24.22.1` for compatibility with the Wix CLI.
+For a new Wix project, follow the generated README to log in and run `npm create @wix/new@latest init`; for an existing site's migration, use the owner's downloaded `wix.config.json` instead.
+Set `site.outputDirectory` to `./public`, preserve the real Wix project IDs, and commit that config before enabling deployment.
+The starter does not invent project IDs or write an unconfigured `wix.config.json`.
+Add a dedicated Wix API key with the required release permissions and target-site access as the repository Actions secret `WIX_API_KEY`.
+The workflow builds with DOMStack, authenticates through `wix login --api-key`, and uploads the output with `wix release`.
+For local deployment after setup, run `npm run deploy` to build and release.
+`.env*` and `.wix/` are ignored; no owner password, copied CLI tokens, or environment pull is needed by the generated workflow.
+This option configures static hosting only; Wix Forms, OAuth visitor integration, and migration finalization are separate tasks.
+
+All workflows run on pushes to `main` or manual dispatch, build with Node.js 24, and serialize deployments without cancelling an active deployment.
 Change the branch if needed.
 They use `npm install` so a lockfile is not required; commit a npm lockfile and switch to `npm ci` for reproducible installs, or adapt the workflow to your preferred package manager.
 Generated READMEs include provider-specific setup instructions.
@@ -157,11 +169,11 @@ npm run smoke:registry
 npm run smoke:local -- ../domstack
 ```
 
-The registry smoke check builds and packs this generator, installs the packed CLI, and creates all six projects using actual published dependencies, with no local npm wrapper or manifest modifications.
+The registry smoke check builds and packs this generator, installs the packed CLI, and creates all eight projects using actual published dependencies, with no local npm wrapper or manifest modifications.
 It reports the installed DOMStack version and checks builds, TS typechecking, Tailwind output, and GitHub Pages asset prefixes.
 
 The optional local smoke check requires a DOMStack checkout with development dependencies installed and the new eject interface.
-It builds declarations in a disposable upstream copy (never in that checkout), builds and packs this generator, installs the packed CLI, and creates six projects covering JS/TS, no JSX/Preact/React, Tailwind, and all deployment selections.
+It builds declarations in a disposable upstream copy (never in that checkout), builds and packs this generator, installs the packed CLI, and creates eight projects covering JS/TS, no JSX/Preact/React, Tailwind, and all deployment selections.
 It installs a local packed DOMStack through a temporary npm wrapper without changing the generated registry dependency range, then checks builds, TS typechecking, Tailwind output, and GitHub Pages asset prefixes.
 Both checks install dependencies from npm, require network access unless cached, and do not deploy anything.
 Temporary projects and generated declaration/JavaScript build outputs are cleaned afterward.

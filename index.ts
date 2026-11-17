@@ -80,7 +80,7 @@ export function parseArguments (arguments_: string[]): CliOptions {
     if (['--language', '--framework', '--deploy'].includes(arguments_[index - 1] ?? '')) continue
     if (argument === '--deploy') {
       const value = arguments_[index + 1]
-      if (value !== 'none' && value !== 'github-pages' && value !== 'neocities') throw new Error('--deploy must be none, github-pages, or neocities.')
+      if (value !== 'none' && value !== 'github-pages' && value !== 'neocities' && value !== 'wix') throw new Error('--deploy must be none, github-pages, neocities, or wix.')
       features.deploy = value
       continue
     }
@@ -179,12 +179,15 @@ export async function createApp (
       build: 'domstack',
       preview: 'domstack --serve',
       ...template.scripts,
+      ...deployment.scripts,
     },
     dependencies: template.dependencies,
     devDependencies: {
       ...template.devDependencies,
+      ...deployment.devDependencies,
       '@domstack/static': domstackVersion,
     },
+    ...(deployment.engines ? { engines: deployment.engines } : {}),
   }
 
   writeProjectFile(

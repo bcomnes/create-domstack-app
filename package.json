@@ -20,7 +20,8 @@
     "neostandard": "^0.13.0",
     "npm-run-all2": "^9.0.0",
     "releasearoni": "^0.2.0",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "@wix/cli": "^1.2.14"
   },
   "engines": {
     "node": "^22.18.0 || >=24.0.0",
@@ -39,6 +40,9 @@
     "deployment.js",
     "deployment.d.ts",
     "deployment.d.ts.map",
+    "wix-agents.js",
+    "wix-agents.d.ts",
+    "wix-agents.d.ts.map",
     "prompts.js",
     "template.js",
     "template.d.ts",

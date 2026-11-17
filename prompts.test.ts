@@ -65,4 +65,6 @@ test('interactive defaults, numbered choices, retry, and explicit-flag skipping'
   assert.equal(questions.length, 2)
   assert.ok(questions.every(question => question.startsWith('Deployment:')))
   assert.equal(closed, 2)
+  answers = ['4']
+  assert.equal((await chooseFeatures(parseArguments(['--language', 'ts', '--framework', 'none', '--no-tailwind']))).deploy, 'wix')
 })

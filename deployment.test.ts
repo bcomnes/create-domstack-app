@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
@@ -7,8 +7,9 @@ import { createApp, parseArguments } from './index.ts'
 import { projectDeployment } from './deployment.ts'
 import type { Deployment } from './deployment.ts'
 import type { Language } from './template.ts'
+import { dependencyVersion } from './dependencies.ts'
 
-const deployments: Deployment[] = ['none', 'github-pages', 'neocities']
+const deployments: Deployment[] = ['none', 'github-pages', 'neocities', 'wix']
 const languages: Language[] = ['ts', 'js']
 
 test('parses deployment and feature flags, rejecting missing and invalid values', () => {
@@ -41,6 +42,9 @@ for (const language of languages) {
         assert.equal(readFileSync(join(directory, path), 'utf8'), content)
       }
       const readme = readFileSync(join(directory, 'README.md'), 'utf8')
+      const manifest = JSON.parse(readFileSync(join(directory, 'package.json'), 'utf8'))
+      assert.equal(manifest.devDependencies['@wix/cli'], deploy === 'wix' ? dependencyVersion('@wix/cli') : undefined)
+      assert.equal(existsSync(join(directory, 'AGENTS.md')), deploy === 'wix')
       assert.ok(readme.includes(`--eject --language ${language} --yes`))
       assert.match(readme, /after manual eject, restore/)
       assert.match(readFileSync(join(directory, 'src/interactive/page.html'), 'utf8'), /href="\.\.\/"/)
@@ -75,6 +79,20 @@ for (const language of languages) {
             const { default: vars } = await import(`data:text/javascript,${encodeURIComponent(source)}#${String(input)}`)
             assert.equal(vars.basePath, expected)
           }
+        } else if (deploy === 'wix') {
+          assert.equal(manifest.engines.node, '>=24.22.1')
+          assert.equal(manifest.scripts.deploy, 'npm run build && wix release')
+          assert.equal(manifest.scripts['wix:login'], 'wix login')
+          assert.equal(manifest.scripts.wix, 'wix')
+          assert.match(workflow, /WIX_API_KEY: \$\{\{ secrets.WIX_API_KEY }}/)
+          assert.match(workflow, /login --api-key "\$WIX_API_KEY"/)
+          assert.ok(workflow.indexOf('npm run build') < workflow.indexOf('npm run wix -- release'))
+          assert.doesNotMatch(workflow, /env pull|finalize-migration|@wix\/new/)
+          assert.equal(existsSync(join(directory, 'wix.config.json')), false)
+          assert.match(readFileSync(join(directory, '.gitignore'), 'utf8'), /^\.env\*$/m)
+          assert.match(readFileSync(join(directory, '.gitignore'), 'utf8'), /^\.wix\/$/m)
+          assert.match(readme, /"outputDirectory": "\.\/public"/)
+          assert.match(readme, /owner's migration download/)
         } else {
           assert.match(workflow, /uses: bcomnes\/deploy-to-neocities@v3/)
           assert.match(workflow, /api_key: \$\{\{ secrets.NEOCITIES_API_TOKEN }}/)

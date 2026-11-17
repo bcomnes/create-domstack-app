@@ -47,7 +47,7 @@ try {
   const manifest = JSON.parse(readFileSync(join(generator, 'package.json'), 'utf8'))
   const range = manifest.devDependencies['@domstack/static']
   assert.ok(!range.startsWith('file:'))
-  for (const path of ['index.js', 'index.d.ts', 'template.js', 'template.d.ts', 'deployment.js', 'deployment.d.ts', 'defaults.js', 'dependencies.js', 'prompts.js']) {
+  for (const path of ['index.js', 'index.d.ts', 'template.js', 'template.d.ts', 'deployment.js', 'deployment.d.ts', 'wix-agents.js', 'wix-agents.d.ts', 'defaults.js', 'dependencies.js', 'prompts.js']) {
     assert.ok(existsSync(join(generator, path)), `missing packed ${path}`)
   }
 
@@ -89,6 +89,8 @@ process.exit(result.status ?? 1)
     { language: 'js', framework: 'react', tailwind: true, deploy: 'github-pages' },
     { language: 'ts', framework: 'react', tailwind: true, deploy: 'neocities' },
     { language: 'js', framework: 'preact', tailwind: true, deploy: 'neocities' },
+    { language: 'ts', framework: 'none', tailwind: false, deploy: 'wix' },
+    { language: 'js', framework: 'none', tailwind: false, deploy: 'wix' },
   ]
   for (const features of cases) {
     const { language, framework, tailwind, deploy } = features
@@ -129,7 +131,7 @@ process.exit(result.status ?? 1)
       assert.doesNotMatch(html, /\/example-repo\/\//)
     }
   }
-  console.log(`\nPacked generator and ${registry ? 'registry' : 'local upstream'} integration passed (6 projects).`)
+  console.log(`\nPacked generator and ${registry ? 'registry' : 'local upstream'} integration passed (8 projects).`)
 } finally {
   run(['run', 'clean'], root)
   rmSync(temporary, { recursive: true, force: true })
