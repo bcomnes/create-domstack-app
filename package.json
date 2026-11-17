@@ -21,7 +21,8 @@
     "npm-run-all2": "^9.0.0",
     "releasearoni": "^0.2.0",
     "typescript": "~6.0.3",
-    "@wix/cli": "^1.2.14"
+    "@wix/cli": "^1.2.14",
+    "wrangler": "^4.157.0"
   },
   "engines": {
     "node": "^22.18.0 || >=24.0.0",

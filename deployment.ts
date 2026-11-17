@@ -2,7 +2,7 @@ import type { Language } from './template.ts'
 import { dependencyVersion } from './dependencies.ts'
 import { wixAgentNotes } from './wix-agents.ts'
 
-export type Deployment = 'none' | 'github-pages' | 'neocities' | 'wix'
+export type Deployment = 'none' | 'github-pages' | 'neocities' | 'wix' | 'cloudflare'
 
 const buildSteps = `      - uses: actions/checkout@v4
         with:
@@ -13,7 +13,7 @@ const buildSteps = `      - uses: actions/checkout@v4
       - run: npm install
 `
 
-export function projectDeployment (deploy: Deployment, language: Language): {
+export function projectDeployment (deploy: Deployment, language: Language, packageName = 'domstack-app'): {
   files: Record<string, string>
   readme: string
   scripts?: Record<string, string>
@@ -82,6 +82,80 @@ The ejected root layout prefixes root-relative script and stylesheet URLs with \
 Local builds default to an empty base path.
 DOMStack does not automatically rewrite links or image URLs in page content; use relative URLs or incorporate \`vars.basePath\` in rendered content where needed.
 For a custom domain, configure it in Settings → Pages before deploying.
+`,
+    }
+  }
+
+  if (deploy === 'cloudflare') {
+    const workerName = packageName.replace(/[^a-z0-9-]+/g, '-').slice(0, 63).replace(/^-+|-+$/g, '') || 'domstack-app'
+    return {
+      scripts: {
+        'cloudflare:login': 'wrangler login',
+        wrangler: 'wrangler',
+        deploy: 'wrangler deploy',
+      },
+      devDependencies: { wrangler: dependencyVersion('wrangler') },
+      files: {
+        '.gitignore': `node_modules
+public
+.DS_Store
+.env*
+.dev.vars*
+.wrangler/
+`,
+        'wrangler.jsonc': `${JSON.stringify({
+          $schema: './node_modules/wrangler/config-schema.json',
+          name: workerName,
+          compatibility_date: '2026-11-04',
+          workers_dev: true,
+          build: { command: 'npm run build' },
+          assets: { directory: './public', not_found_handling: '404-page' },
+        }, null, 2)}\n`,
+        '.github/workflows/cloudflare.yml': `name: Deploy to Cloudflare
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+${buildSteps}      - run: npm run deploy
+        env:
+          CLOUDFLARE_API_TOKEN: \${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: \${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+`,
+      },
+      readme: `
+## Cloudflare deployment
+
+This project uses Cloudflare Workers Static Assets with a local Wrangler dev dependency.
+\`wrangler.jsonc\` serves \`public/\`, enables a \`workers.dev\` address, and uses \`404-page\` handling rather than a single-page-app fallback.
+Its Worker name is derived from the project directory; review \`name\` before your first deployment and choose a unique name for your account.
+Wrangler runs \`npm run build\` through the config's \`build.command\`, so \`npm run deploy\` builds once and deploys the result.
+
+For local deployment, run \`npm run cloudflare:login\`, then \`npm run deploy\`.
+For a build/configuration check without publishing, run \`npm run deploy -- --dry-run\`.
+Scaffolding does not log in, create a Worker, or deploy anything.
+The first real deployment creates or updates the Worker with the configured name.
+
+For GitHub Actions, add repository Actions secrets \`CLOUDFLARE_API_TOKEN\` and \`CLOUDFLARE_ACCOUNT_ID\`.
+Use a token with Workers Scripts edit permission for the intended account; the account ID identifies that account and is not itself a credential.
+Commit \`wrangler.jsonc\` and \`.github/workflows/cloudflare.yml\` once the name and credentials are configured.
+${workflowNotes}
+The workflow runs the local Wrangler through \`npm run deploy\`; its build hook runs DOMStack, so a separate CI build step is unnecessary.
+Keep tokens, \`.env*\`, \`.dev.vars*\`, and \`.wrangler/\` out of Git and public output.
+Custom domains can be configured later through Cloudflare Workers settings; no domain or zone is required for the generated \`workers.dev\` deployment.
+See [Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/) and [GitHub Actions deployment](https://developers.cloudflare.com/workers/ci-cd/external-cicd/github-actions/).
 `,
     }
   }

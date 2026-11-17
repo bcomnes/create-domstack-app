@@ -67,4 +67,6 @@ test('interactive defaults, numbered choices, retry, and explicit-flag skipping'
   assert.equal(closed, 2)
   answers = ['4']
   assert.equal((await chooseFeatures(parseArguments(['--language', 'ts', '--framework', 'none', '--no-tailwind']))).deploy, 'wix')
+  answers = ['5']
+  assert.equal((await chooseFeatures(parseArguments(['--language', 'ts', '--framework', 'none', '--no-tailwind']))).deploy, 'cloudflare')
 })

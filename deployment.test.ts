@@ -9,7 +9,7 @@ import type { Deployment } from './deployment.ts'
 import type { Language } from './template.ts'
 import { dependencyVersion } from './dependencies.ts'
 
-const deployments: Deployment[] = ['none', 'github-pages', 'neocities', 'wix']
+const deployments: Deployment[] = ['none', 'github-pages', 'neocities', 'wix', 'cloudflare']
 const languages: Language[] = ['ts', 'js']
 
 test('parses deployment and feature flags, rejecting missing and invalid values', () => {
@@ -37,13 +37,14 @@ for (const language of languages) {
       t.after(() => rmSync(parent, { recursive: true, force: true }))
       const directory = join(parent, 'site')
       await createApp({ targetDirectory: directory, language, deploy, install: false, framework: 'preact', tailwind: true })
-      const result = projectDeployment(deploy, language)
+      const result = projectDeployment(deploy, language, 'site')
       for (const [path, content] of Object.entries(result.files)) {
         assert.equal(readFileSync(join(directory, path), 'utf8'), content)
       }
       const readme = readFileSync(join(directory, 'README.md'), 'utf8')
       const manifest = JSON.parse(readFileSync(join(directory, 'package.json'), 'utf8'))
       assert.equal(manifest.devDependencies['@wix/cli'], deploy === 'wix' ? dependencyVersion('@wix/cli') : undefined)
+      assert.equal(manifest.devDependencies.wrangler, deploy === 'cloudflare' ? dependencyVersion('wrangler') : undefined)
       assert.equal(existsSync(join(directory, 'AGENTS.md')), deploy === 'wix')
       assert.ok(readme.includes(`--eject --language ${language} --yes`))
       assert.match(readme, /after manual eject, restore/)
@@ -59,7 +60,7 @@ for (const language of languages) {
         assert.match(workflow, /branches: \[main\]/)
         assert.match(workflow, /workflow_dispatch:/)
         assert.match(workflow, /run: npm install/)
-        assert.match(workflow, /run: npm run build/)
+        if (deploy !== 'cloudflare') assert.match(workflow, /run: npm run build/)
         assert.match(workflow, /cancel-in-progress: false/)
         if (deploy === 'github-pages') {
           assert.match(workflow, /pages: write/)
@@ -79,6 +80,23 @@ for (const language of languages) {
             const { default: vars } = await import(`data:text/javascript,${encodeURIComponent(source)}#${String(input)}`)
             assert.equal(vars.basePath, expected)
           }
+        } else if (deploy === 'cloudflare') {
+          const config = JSON.parse(readFileSync(join(directory, 'wrangler.jsonc'), 'utf8'))
+          assert.equal(config.name, 'site')
+          assert.equal(config.workers_dev, true)
+          assert.deepEqual(config.build, { command: 'npm run build' })
+          assert.deepEqual(config.assets, { directory: './public', not_found_handling: '404-page' })
+          assert.equal(config.main, undefined)
+          assert.equal(manifest.scripts.deploy, 'wrangler deploy')
+          assert.equal(manifest.scripts['cloudflare:login'], 'wrangler login')
+          assert.match(workflow, /run: npm run deploy/)
+          assert.doesNotMatch(workflow, /run: npm run build/)
+          assert.match(workflow, /CLOUDFLARE_API_TOKEN: \$\{\{ secrets.CLOUDFLARE_API_TOKEN }}/)
+          assert.match(workflow, /CLOUDFLARE_ACCOUNT_ID: \$\{\{ secrets.CLOUDFLARE_ACCOUNT_ID }}/)
+          const ignore = readFileSync(join(directory, '.gitignore'), 'utf8')
+          assert.match(ignore, /^\.wrangler\/$/m)
+          assert.match(ignore, /^\.dev\.vars\*$/m)
+          assert.match(readme, /--dry-run/)
         } else if (deploy === 'wix') {
           assert.equal(manifest.engines.node, '>=24.22.1')
           assert.equal(manifest.scripts.deploy, 'npm run build && wix release')
@@ -106,3 +124,13 @@ for (const language of languages) {
     })
   }
 }
+
+test('Cloudflare uses a valid Worker name derived from the target directory', async (t) => {
+  const parent = mkdtempSync(join(tmpdir(), 'domstack-cloudflare-name-'))
+  t.after(() => rmSync(parent, { recursive: true, force: true }))
+  for (const [name, expected] of [['My.Site_Name', 'my-site-name'], ['a'.repeat(70), 'a'.repeat(63)]]) {
+    const directory = join(parent, name!)
+    await createApp({ targetDirectory: directory, deploy: 'cloudflare', install: false })
+    assert.equal(JSON.parse(readFileSync(join(directory, 'wrangler.jsonc'), 'utf8')).name, expected)
+  }
+})

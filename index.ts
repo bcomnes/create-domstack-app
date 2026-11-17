@@ -80,7 +80,7 @@ export function parseArguments (arguments_: string[]): CliOptions {
     if (['--language', '--framework', '--deploy'].includes(arguments_[index - 1] ?? '')) continue
     if (argument === '--deploy') {
       const value = arguments_[index + 1]
-      if (value !== 'none' && value !== 'github-pages' && value !== 'neocities' && value !== 'wix') throw new Error('--deploy must be none, github-pages, neocities, or wix.')
+      if (value !== 'none' && value !== 'github-pages' && value !== 'neocities' && value !== 'wix' && value !== 'cloudflare') throw new Error('--deploy must be none, github-pages, neocities, wix, or cloudflare.')
       features.deploy = value
       continue
     }
@@ -167,7 +167,7 @@ export async function createApp (
     deploy: options.deploy ?? 'none',
   }
   const template = projectFeatures(features)
-  const deployment = projectDeployment(features.deploy, features.language)
+  const deployment = projectDeployment(features.deploy, features.language, packageName)
 
   const packageJson = {
     name: packageName,

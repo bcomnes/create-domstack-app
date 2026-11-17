@@ -13,7 +13,7 @@ npm create @domstack/app@latest my-app
 ```
 
 The npm `create` convention maps `@domstack/app` to this package, `@domstack/create-app`.
-In an interactive terminal, the command asks for the source language (TypeScript by default), browser JSX runtime (none by default, Preact recommended when wanted, or React), Tailwind CSS (off by default), and deployment (none by default, GitHub Pages, Neocities, or Wix).
+In an interactive terminal, the command asks for the source language (TypeScript by default), browser JSX runtime (none by default, Preact recommended when wanted, or React), Tailwind CSS (off by default), and deployment (none by default, GitHub Pages, Neocities, Wix, or Cloudflare).
 Explicit flags skip their corresponding questions.
 Use `--yes` to skip all questions; non-interactive input also uses defaults for unspecified choices.
 The command creates the project, installs its dependencies, and ejects DOMStack's customizable default layout, global stylesheet, and client script in the selected language.
@@ -29,7 +29,7 @@ npm create @domstack/app@latest my-app -- --yes --language ts --framework preact
 | `--language` | `ts` (default), `js` |
 | `--framework` | `none` (default), `preact`, `react` |
 | `--tailwind` / `--no-tailwind` | Enable / disable Tailwind CSS (default: disabled) |
-| `--deploy` | `none` (default), `github-pages`, `neocities`, `wix` |
+| `--deploy` | `none` (default), `github-pages`, `neocities`, `wix`, `cloudflare` |
 | `-y`, `--yes` | Skip prompts, retaining explicit choices |
 | `--no-install` | Write starter files without installing or ejecting |
 | `-h`, `--help` | Show usage |
@@ -121,6 +121,17 @@ For local deployment after setup, run `npm run deploy` to build and release.
 `.env*` and `.wix/` are ignored; no owner password, copied CLI tokens, or environment pull is needed by the generated workflow.
 This option configures static hosting only; Wix Forms, OAuth visitor integration, and migration finalization are separate tasks.
 
+`--deploy cloudflare` uses Cloudflare Workers Static Assets.
+It adds Wrangler as a local dev dependency, `cloudflare:login`, `wrangler`, and `deploy` scripts, `wrangler.jsonc`, and `.github/workflows/cloudflare.yml`.
+The config derives a valid Worker name from the project directory, enables `workers.dev`, serves `public/`, and uses `404-page` handling without a Worker script or SPA fallback.
+Review the name before deploying; `npm run deploy` runs Wrangler, whose build hook invokes `npm run build` once before upload.
+For local deployment, run `npm run cloudflare:login` first; `npm run deploy -- --dry-run` checks the build/config without publishing.
+For GitHub Actions, add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as repository Actions secrets, using a token with Workers Scripts edit access to the intended account.
+The account ID is an identifier rather than a credential.
+The generated workflow invokes `npm run deploy` and relies on Wrangler's build hook instead of building twice.
+`.wrangler/`, `.dev.vars*`, and `.env*` are ignored.
+No custom domain is required; add one later through Cloudflare Workers settings if needed.
+
 All workflows run on pushes to `main` or manual dispatch, build with Node.js 24, and serialize deployments without cancelling an active deployment.
 Change the branch if needed.
 They use `npm install` so a lockfile is not required; commit a npm lockfile and switch to `npm ci` for reproducible installs, or adapt the workflow to your preferred package manager.
@@ -169,11 +180,11 @@ npm run smoke:registry
 npm run smoke:local -- ../domstack
 ```
 
-The registry smoke check builds and packs this generator, installs the packed CLI, and creates all eight projects using actual published dependencies, with no local npm wrapper or manifest modifications.
+The registry smoke check builds and packs this generator, installs the packed CLI, and creates all ten projects using actual published dependencies, with no local npm wrapper or manifest modifications.
 It reports the installed DOMStack version and checks builds, TS typechecking, Tailwind output, and GitHub Pages asset prefixes.
 
 The optional local smoke check requires a DOMStack checkout with development dependencies installed and the new eject interface.
-It builds declarations in a disposable upstream copy (never in that checkout), builds and packs this generator, installs the packed CLI, and creates eight projects covering JS/TS, no JSX/Preact/React, Tailwind, and all deployment selections.
+It builds declarations in a disposable upstream copy (never in that checkout), builds and packs this generator, installs the packed CLI, and creates ten projects covering JS/TS, no JSX/Preact/React, Tailwind, and all deployment selections.
 It installs a local packed DOMStack through a temporary npm wrapper without changing the generated registry dependency range, then checks builds, TS typechecking, Tailwind output, and GitHub Pages asset prefixes.
 Both checks install dependencies from npm, require network access unless cached, and do not deploy anything.
 Temporary projects and generated declaration/JavaScript build outputs are cleaned afterward.
