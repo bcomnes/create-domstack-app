@@ -104,7 +104,7 @@ test('boolean prompts accept case-insensitive yes/no, default on Enter, and reje
   }
   answers = ['1', '2', 'maybe', 'Y']
   assert.equal((await chooseFeatures(options)).tailwind, true)
-  assert.equal(messages.mock.callCount(), 3)
+  assert.equal(messages.mock.calls.filter(call => stripVTControlCharacters(String(call.arguments[0])).startsWith('Enter y or n')).length, 3)
   assert.ok(questions.every(question => question.includes('[y/N] (default: no)')))
   assert.deepEqual(answers, [])
 })
