@@ -9,7 +9,7 @@ import type { Deployment } from './deployment.ts'
 import type { Language } from './template.ts'
 import { dependencyVersion } from './dependencies.ts'
 
-const deployments: Deployment[] = ['none', 'github-pages', 'neocities', 'wix', 'cloudflare']
+const deployments: Deployment[] = ['none', 'github-pages', 'neocities', 'wix', 'cloudflare', 'vercel']
 const languages: Language[] = ['ts', 'js']
 
 test('parses deployment and feature flags, rejecting missing and invalid values', () => {
@@ -47,6 +47,7 @@ for (const language of languages) {
       const manifest = JSON.parse(readFileSync(join(directory, 'package.json'), 'utf8'))
       assert.equal(manifest.devDependencies['@wix/cli'], deploy === 'wix' ? dependencyVersion('@wix/cli') : undefined)
       assert.equal(manifest.devDependencies.wrangler, deploy === 'cloudflare' ? dependencyVersion('wrangler') : undefined)
+      assert.equal(manifest.devDependencies.vercel, deploy === 'vercel' ? dependencyVersion('vercel') : undefined)
       assert.equal(existsSync(join(directory, 'AGENTS.md')), deploy === 'wix')
       assert.ok(readme.includes(`--eject --language ${language} --yes`))
       assert.match(readme, /after manual eject, restore/)
@@ -62,7 +63,7 @@ for (const language of languages) {
         assert.match(workflow, /branches: \[main\]/)
         assert.match(workflow, /workflow_dispatch:/)
         assert.match(workflow, /run: npm install/)
-        if (deploy !== 'cloudflare') assert.match(workflow, /run: npm run build/)
+        if (deploy !== 'cloudflare' && deploy !== 'vercel') assert.match(workflow, /run: npm run build/)
         assert.match(workflow, /cancel-in-progress: false/)
         if (deploy === 'github-pages') {
           assert.match(workflow, /pages: write/)
@@ -82,6 +83,20 @@ for (const language of languages) {
             const { default: vars } = await import(`data:text/javascript,${encodeURIComponent(source)}#${String(input)}`)
             assert.equal(vars.basePath, expected)
           }
+        } else if (deploy === 'vercel') {
+          const config = JSON.parse(readFileSync(join(directory, 'vercel.json'), 'utf8'))
+          assert.equal(config.framework, null)
+          assert.equal(config.buildCommand, 'npm run build')
+          assert.equal(config.outputDirectory, 'public')
+          assert.equal(manifest.scripts.deploy, 'vercel deploy --prod')
+          for (const secret of ['VERCEL_TOKEN', 'VERCEL_ORG_ID', 'VERCEL_PROJECT_ID']) {
+            assert.ok(workflow.includes(`${secret}: \${{ secrets.${secret} }}`))
+          }
+          assert.ok(workflow.indexOf('pull --yes --environment=production') < workflow.indexOf('build --prod'))
+          assert.ok(workflow.indexOf('build --prod') < workflow.indexOf('npm run deploy -- --prebuilt'))
+          assert.doesNotMatch(workflow, /run: npm run build/)
+          assert.match(readFileSync(join(directory, '.gitignore'), 'utf8'), /^\.vercel\/$/m)
+          assert.match(readme, /build remotely/)
         } else if (deploy === 'cloudflare') {
           const config = JSON.parse(readFileSync(join(directory, 'wrangler.jsonc'), 'utf8'))
           assert.equal(config.name, 'site')

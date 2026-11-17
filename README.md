@@ -13,7 +13,7 @@ npm create @domstack/app@latest my-app
 ```
 
 The npm `create` convention maps `@domstack/app` to this package, `@domstack/create-app`.
-In an interactive terminal, the command asks for the source language (TypeScript by default), browser JSX runtime (none by default, Preact recommended when wanted, or React), Tailwind CSS (off by default), and deployment (none by default, GitHub Pages, Neocities, Wix, or Cloudflare).
+In an interactive terminal, the command asks for the source language (TypeScript by default), browser JSX runtime (none by default, Preact recommended when wanted, or React), Tailwind CSS (off by default), and deployment (none by default, GitHub Pages, Neocities, Wix, Cloudflare, or Vercel).
 Explicit flags skip their corresponding questions.
 Boolean questions accept case-insensitive `y`/`n` (or `yes`/`no`), state their default, and use that default when you press Enter; Tailwind shows `[y/N] (default: no)`.
 Use `--yes` to skip all questions; non-interactive input also uses defaults for unspecified choices.
@@ -30,7 +30,7 @@ npm create @domstack/app@latest my-app -- --yes --language ts --framework preact
 | `--language` | `ts` (default), `js` |
 | `--framework` | `none` (default), `preact`, `react` |
 | `--tailwind` | Enable Tailwind CSS (default: disabled) |
-| `--deploy` | `none` (default), `github-pages`, `neocities`, `wix`, `cloudflare` |
+| `--deploy` | `none` (default), `github-pages`, `neocities`, `wix`, `cloudflare`, `vercel` |
 | `-y`, `--yes` | Skip prompts, retaining explicit choices |
 | `--no-install` | Write starter files without installing or ejecting |
 | `-h`, `--help` | Show usage |
@@ -133,6 +133,14 @@ The generated workflow invokes `npm run deploy` and relies on Wrangler's build h
 `.wrangler/`, `.dev.vars*`, and `.env*` are ignored.
 No custom domain is required; add one later through Cloudflare Workers settings if needed.
 
+`--deploy vercel` adds the local Vercel CLI, `vercel:login`, `vercel`, and `deploy` scripts, `vercel.json`, and `.github/workflows/vercel.yml`.
+The config uses the Other framework preset, `npm run build`, and `public` as the output directory.
+Log in and link the intended project with `npm run vercel:login` and `npm run vercel -- link` before deploying locally with `npm run deploy`.
+Local deployment uploads source for Vercel to build remotely; the GitHub Actions workflow instead pulls production settings, runs `vercel build --prod`, and deploys `.vercel/output` with `--prebuilt`.
+Add repository Actions secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID`; the IDs come from `.vercel/project.json` after linking.
+`.vercel/` and `.env*` are ignored.
+Choose either this workflow or Vercel's native Git integration to avoid duplicate production deployments.
+
 All workflows run on pushes to `main` or manual dispatch, build with Node.js 24, and serialize deployments without cancelling an active deployment.
 Change the branch if needed.
 They use `npm install` so a lockfile is not required; commit a npm lockfile and switch to `npm ci` for reproducible installs, or adapt the workflow to your preferred package manager.
@@ -181,11 +189,11 @@ npm run smoke:registry
 npm run smoke:local -- ../domstack
 ```
 
-The registry smoke check builds and packs this generator, installs the packed CLI, and creates all ten projects using actual published dependencies, with no local npm wrapper or manifest modifications.
+The registry smoke check builds and packs this generator, installs the packed CLI, and creates all twelve projects using actual published dependencies, with no local npm wrapper or manifest modifications.
 It reports the installed DOMStack version and checks builds, TS typechecking, Tailwind output, and GitHub Pages asset prefixes.
 
 The optional local smoke check requires a DOMStack checkout with development dependencies installed and the new eject interface.
-It builds declarations in a disposable upstream copy (never in that checkout), builds and packs this generator, installs the packed CLI, and creates ten projects covering JS/TS, no JSX/Preact/React, Tailwind, and all deployment selections.
+It builds declarations in a disposable upstream copy (never in that checkout), builds and packs this generator, installs the packed CLI, and creates twelve projects covering JS/TS, no JSX/Preact/React, Tailwind, and all deployment selections.
 It installs a local packed DOMStack through a temporary npm wrapper without changing the generated registry dependency range, then checks builds, TS typechecking, Tailwind output, and GitHub Pages asset prefixes.
 Both checks install dependencies from npm, require network access unless cached, and do not deploy anything.
 Temporary projects and generated declaration/JavaScript build outputs are cleaned afterward.

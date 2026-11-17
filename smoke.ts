@@ -93,6 +93,8 @@ process.exit(result.status ?? 1)
     { language: 'js', framework: 'none', tailwind: false, deploy: 'wix' },
     { language: 'ts', framework: 'none', tailwind: false, deploy: 'cloudflare' },
     { language: 'js', framework: 'none', tailwind: false, deploy: 'cloudflare' },
+    { language: 'ts', framework: 'none', tailwind: false, deploy: 'vercel' },
+    { language: 'js', framework: 'none', tailwind: false, deploy: 'vercel' },
   ]
   for (const features of cases) {
     const { language, framework, tailwind, deploy } = features
@@ -133,7 +135,7 @@ process.exit(result.status ?? 1)
       assert.doesNotMatch(html, /\/example-repo\/\//)
     }
   }
-  console.log(`\nPacked generator and ${registry ? 'registry' : 'local upstream'} integration passed (10 projects).`)
+  console.log(`\nPacked generator and ${registry ? 'registry' : 'local upstream'} integration passed (12 projects).`)
 } finally {
   run(['run', 'clean'], root)
   rmSync(temporary, { recursive: true, force: true })

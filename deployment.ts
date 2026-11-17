@@ -2,7 +2,7 @@ import type { Language } from './template.ts'
 import { dependencyVersion } from './dependencies.ts'
 import { wixAgentNotes } from './wix-agents.ts'
 
-export type Deployment = 'none' | 'github-pages' | 'neocities' | 'wix' | 'cloudflare'
+export type Deployment = 'none' | 'github-pages' | 'neocities' | 'wix' | 'cloudflare' | 'vercel'
 
 const buildSteps = `      - uses: actions/checkout@v4
         with:
@@ -82,6 +82,79 @@ The ejected root layout prefixes root-relative script and stylesheet URLs with \
 Local builds default to an empty base path.
 DOMStack does not automatically rewrite links or image URLs in page content; use relative URLs or incorporate \`vars.basePath\` in rendered content where needed.
 For a custom domain, configure it in Settings → Pages before deploying.
+`,
+    }
+  }
+
+  if (deploy === 'vercel') {
+    return {
+      scripts: {
+        'vercel:login': 'vercel login',
+        vercel: 'vercel',
+        deploy: 'vercel deploy --prod',
+      },
+      devDependencies: { vercel: dependencyVersion('vercel') },
+      files: {
+        '.gitignore': `node_modules
+public
+.DS_Store
+.env*
+.vercel/
+`,
+        'vercel.json': `${JSON.stringify({
+          $schema: 'https://openapi.vercel.sh/vercel.json',
+          framework: null,
+          buildCommand: 'npm run build',
+          outputDirectory: 'public',
+        }, null, 2)}\n`,
+        '.github/workflows/vercel.yml': `name: Deploy to Vercel
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vercel
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: \${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: \${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: \${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+${buildSteps}      - name: Pull Vercel project settings
+        run: npm run vercel -- pull --yes --environment=production --token "$VERCEL_TOKEN"
+      - name: Build production artifacts
+        run: npm run vercel -- build --prod --token "$VERCEL_TOKEN"
+      - name: Deploy production artifacts
+        run: npm run deploy -- --prebuilt --token "$VERCEL_TOKEN"
+`,
+      },
+      readme: `
+## Vercel deployment
+
+This project uses the local Vercel CLI and \`vercel.json\` with the Other framework preset, \`npm run build\`, and \`public\` as the static output directory.
+For local deployment, run \`npm run vercel:login\`, then \`npm run vercel -- link\` to select the intended account and project.
+After linking, \`npm run deploy\` creates a production deployment, uploading source for Vercel to build remotely.
+For a preview instead, use \`npm run vercel -- deploy\` without \`--prod\`.
+Scaffolding does not log in, link or create a Vercel project, or deploy anything.
+
+For GitHub Actions, create a Vercel token and add repository Actions secrets \`VERCEL_TOKEN\`, \`VERCEL_ORG_ID\`, and \`VERCEL_PROJECT_ID\`.
+Get the organization/account and project identifiers from \`.vercel/project.json\` after linking; they are identifiers rather than authentication credentials.
+Keep the token, local \`.vercel/\` state, and \`.env*\` out of Git and public output.
+Commit \`vercel.json\` and \`.github/workflows/vercel.yml\` once the project and secrets are ready.
+${workflowNotes}
+The workflow pulls production project settings, runs \`vercel build --prod\` to invoke DOMStack once, then publishes the generated \`.vercel/output\` with \`--prebuilt\`.
+Do not add a separate \`npm run build\` step to that workflow or replace the prebuilt upload with a second remote build.
+If the same repository is connected to Vercel's native Git integration, choose one deployment mechanism to avoid duplicate production deployments.
+See [Vercel GitHub Actions](https://vercel.com/kb/guide/how-can-i-use-github-actions-with-vercel) and [project configuration](https://vercel.com/docs/project-configuration/vercel-json).
 `,
     }
   }
