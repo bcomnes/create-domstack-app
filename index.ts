@@ -96,8 +96,8 @@ export function parseArguments (arguments_: string[]): CliOptions {
       features.framework = value
       continue
     }
-    if (argument === '--tailwind' || argument === '--no-tailwind') {
-      features.tailwind = argument === '--tailwind'
+    if (argument === '--tailwind') {
+      features.tailwind = true
       continue
     }
     if (argument === '--yes' || argument === '-y') {

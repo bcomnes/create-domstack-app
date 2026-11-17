@@ -59,14 +59,47 @@ test('interactive defaults, numbered choices, retry, and explicit-flag skipping'
   assert.match(questions[3] ?? '', /Deployment/)
   answers = ['invalid', '3']
   questions.length = 0
-  assert.deepEqual(await chooseFeatures(parseArguments(['--language', 'js', '--framework', 'preact', '--no-tailwind'])), {
+  assert.deepEqual(await chooseFeatures({ ...parseArguments(['--language', 'js', '--framework', 'preact']), tailwind: false }), {
     language: 'js', framework: 'preact', tailwind: false, deploy: 'neocities',
   })
   assert.equal(questions.length, 2)
   assert.ok(questions.every(question => question.startsWith('Deployment:')))
   assert.equal(closed, 2)
   answers = ['4']
-  assert.equal((await chooseFeatures(parseArguments(['--language', 'ts', '--framework', 'none', '--no-tailwind']))).deploy, 'wix')
+  assert.equal((await chooseFeatures({ ...parseArguments(['--language', 'ts', '--framework', 'none']), tailwind: false })).deploy, 'wix')
   answers = ['5']
-  assert.equal((await chooseFeatures(parseArguments(['--language', 'ts', '--framework', 'none', '--no-tailwind']))).deploy, 'cloudflare')
+  assert.equal((await chooseFeatures({ ...parseArguments(['--language', 'ts', '--framework', 'none']), tailwind: false })).deploy, 'cloudflare')
+})
+
+test('boolean prompts accept case-insensitive yes/no, default on Enter, and reject numbers', async (t) => {
+  t.after(tty(true))
+  let answers: string[] = []
+  const questions: string[] = []
+  const mock = t.mock.method(readline, 'createInterface', () => ({
+    on () {},
+    async question (question: string) {
+      questions.push(question)
+      const answer = answers.shift()
+      assert.notEqual(answer, undefined, 'unexpected question')
+      return answer
+    },
+    close () {},
+  }))
+  const messages = t.mock.method(console, 'log', () => {})
+  syncBuiltinESMExports()
+  t.after(() => { mock.mock.restore(); syncBuiltinESMExports() })
+  const options = parseArguments(['--language', 'ts', '--framework', 'none', '--deploy', 'none'])
+  for (const answer of ['y', 'Y', 'yes', 'YES', ' y ']) {
+    answers = [answer]
+    assert.equal((await chooseFeatures(options)).tailwind, true)
+  }
+  for (const answer of ['n', 'N', 'no', 'NO', '', '  ']) {
+    answers = [answer]
+    assert.equal((await chooseFeatures(options)).tailwind, false)
+  }
+  answers = ['1', '2', 'maybe', 'Y']
+  assert.equal((await chooseFeatures(options)).tailwind, true)
+  assert.equal(messages.mock.callCount(), 3)
+  assert.ok(questions.every(question => question.includes('[y/N] (default: no)')))
+  assert.deepEqual(answers, [])
 })

@@ -27,7 +27,9 @@ test('parses deployment and feature flags, rejecting missing and invalid values'
     assert.throws(() => parseArguments([flag, 'invalid']), /must be/)
     assert.throws(() => parseArguments([flag, '--yes']), /must be/)
   }
-  assert.equal(parseArguments(['--tailwind', '--no-tailwind']).tailwind, false)
+  assert.equal(parseArguments(['--tailwind']).tailwind, true)
+  assert.equal(parseArguments(['--yes']).tailwind, undefined)
+  assert.throws(() => parseArguments(['--no-tailwind']), /Unknown option/)
 })
 
 for (const language of languages) {

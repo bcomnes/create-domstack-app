@@ -98,7 +98,7 @@ process.exit(result.status ?? 1)
     const { language, framework, tailwind, deploy } = features
     const directory = join(temporary, `${language}-${framework}-${deploy}`)
     console.log(`\nSmoke: ${JSON.stringify(features)}`)
-    execFileSync(process.execPath, [join(generator, 'bin.js'), directory, '--yes', '--language', language, '--framework', framework, tailwind ? '--tailwind' : '--no-tailwind', '--deploy', deploy], {
+    execFileSync(process.execPath, [join(generator, 'bin.js'), directory, '--yes', '--language', language, '--framework', framework, ...(tailwind ? ['--tailwind'] : []), '--deploy', deploy], {
       cwd: consumer, env, stdio: 'inherit', timeout: 120_000,
     })
     const generatedManifest = JSON.parse(readFileSync(join(directory, 'package.json'), 'utf8'))

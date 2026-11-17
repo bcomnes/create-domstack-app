@@ -17,7 +17,7 @@ Usage:
 Options:
   --language ts|js              Source language (default: ts)
   --framework none|preact|react  Browser JSX runtime (default: none)
-  --tailwind / --no-tailwind    Enable or disable Tailwind CSS
+  --tailwind                   Enable Tailwind CSS (default: disabled)
   --deploy none|github-pages|neocities|wix|cloudflare  Deployment workflow (default: none)
   -y, --yes                    Skip prompts and use defaults
   --no-install  Create the project without installing dependencies

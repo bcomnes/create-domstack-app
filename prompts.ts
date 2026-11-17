@@ -27,9 +27,20 @@ export async function chooseFeatures (options: CliOptions): Promise<Features> {
       }
     }
 
+    async function confirm (question: string, fallback: boolean): Promise<boolean> {
+      const defaultLabel = fallback ? 'yes' : 'no'
+      while (true) {
+        const answer = (await rl.question(`${question} [${fallback ? 'Y/n' : 'y/N'}] (default: ${defaultLabel}): `, { signal: controller.signal })).trim().toLowerCase()
+        if (!answer) return fallback
+        if (answer === 'y' || answer === 'yes') return true
+        if (answer === 'n' || answer === 'no') return false
+        console.log(`Enter y or n (default: ${defaultLabel}).`)
+      }
+    }
+
     const language = options.language ?? await choose('Language: 1) TypeScript  2) JavaScript [1]: ', ['ts', 'js'], 'ts')
     const framework = options.framework ?? await choose('JSX/TSX: 1) None  2) Preact (recommended)  3) React [1]: ', ['none', 'preact', 'react'], 'none')
-    const tailwind = options.tailwind ?? (await choose('Set up Tailwind CSS? 1) No  2) Yes [1]: ', ['no', 'yes'], 'no')) === 'yes'
+    const tailwind = options.tailwind ?? await confirm('Set up Tailwind CSS?', defaults.tailwind)
     const deploy = options.deploy ?? await choose('Deployment: 1) None  2) GitHub Pages  3) Neocities  4) Wix  5) Cloudflare [1]: ', ['none', 'github-pages', 'neocities', 'wix', 'cloudflare'], 'none')
     return { language, framework, tailwind, deploy }
   } catch (error) {
