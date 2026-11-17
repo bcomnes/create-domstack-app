@@ -350,7 +350,7 @@ npm run build
 The generated site is written to \`public/\`.
 With default setup, \`src/layouts/\` and \`src/globals/\` contain customizable DOMStack defaults.
 If setup used \`--no-install\`, run \`npm install\`, \`npx domstack --eject --language ${features.language} --yes\`, and \`npm install\` to eject them and install their dependencies.
-${features.tailwind ? 'Eject replaces `src/globals/global.css`; after manual eject, restore its contents to `@import "tailwindcss" source("../");` before building.\n' : ''}${features.language === 'js' ? 'For manual JavaScript setup, remove the unnecessary slash escape in the ejected layout’s closing script string, then run `npx eslint src/layouts/root.layout.js --fix`.\n' : ''}Only eject into a fresh project: eject overwrites the default layout, stylesheet, and client files.
+${features.tailwind ? 'Eject replaces `src/globals/global.css`; after manual eject, restore its contents to `@import "tailwindcss" source("../");` before building.\n' : ''}Only eject into a fresh project: eject overwrites the default layout, stylesheet, and client files.
 This setup requires a DOMStack release supporting \`--eject --language ts|js --yes\`.
 `
 }

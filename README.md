@@ -129,8 +129,7 @@ npx domstack --eject --language ts --yes
 npm install
 ```
 
-Use `--language js` for a JavaScript project, then run `npx eslint src/layouts/root.layout.js --fix` to format the ejected layout.
-If ESLint reports an unnecessary escape in `</script>`, remove the backslash before the slash.
+Use `--language js` for a JavaScript project.
 The eject command writes the default layout, stylesheet, and client script, so run it before customizing those files.
 If you selected Tailwind, restore `src/globals/global.css` afterward to:
 
