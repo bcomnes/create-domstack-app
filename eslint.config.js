@@ -1,8 +1,7 @@
-import neostandard, { resolveIgnoresFromGitignore } from 'neostandard'
+import { globalIgnores } from 'eslint/config'
+import { neostandard, resolveIgnoresFromGitignore } from 'neostandard'
 
-export default neostandard({
-  ts: true,
-  ignores: [
-    ...resolveIgnoresFromGitignore(),
-  ],
-})
+export default [
+  globalIgnores(resolveIgnoresFromGitignore()),
+  ...neostandard({ ts: true }),
+]

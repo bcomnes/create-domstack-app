@@ -30,17 +30,21 @@ export function projectFeatures (features: Omit<Features, 'deploy'>): {
     'test:eslint': 'eslint .',
     'test:node': 'node --test',
   }
-  files['eslint.config.js'] = `import neostandard, { resolveIgnoresFromGitignore } from 'neostandard'
+  files['eslint.config.js'] = `import { globalIgnores } from 'eslint/config'
+import { neostandard, resolveIgnoresFromGitignore } from 'neostandard'
 
-export default neostandard({
-  ts: ${language === 'ts'},
-  env: ['browser'],
-  ignores: resolveIgnoresFromGitignore(),
-})
+export default [
+  globalIgnores(resolveIgnoresFromGitignore()),
+  ...neostandard({
+    ts: ${language === 'ts' || framework !== 'none'},
+${language === 'js' && framework !== 'none' ? "    // Track component references in JSX with TypeScript's parser.\n    filesTs: ['**/*.jsx'],\n" : ''}    env: ['browser'],
+  }),
+]
 `
 
   if (language === 'ts') {
     devDependencies['typescript'] = dependencyVersion('typescript')
+    devDependencies['@typescript/native'] = dependencyVersion('@typescript/native')
     devDependencies['@types/node'] = dependencyVersion('@types/node')
     scripts['test:typecheck'] = 'tsc --noEmit'
     files['tsconfig.json'] = `${JSON.stringify({

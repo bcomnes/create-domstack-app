@@ -37,6 +37,7 @@ for (const language of languages) {
           assert.ok(config.compilerOptions.lib.includes('DOM'))
           assert.equal(config.compilerOptions.jsxImportSource, framework === 'none' ? undefined : framework)
           assert.equal(devDependencies['typescript'], versions['typescript'])
+          assert.equal(devDependencies['@typescript/native'], versions['@typescript/native'])
           assert.equal(devDependencies['@types/node'], versions['@types/node'])
         }
 
