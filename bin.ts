@@ -56,6 +56,7 @@ try {
       console.log(`Run ${packageManager} install again to install the added dependencies.`)
     }
     console.log(`Run ${packageManagerRunCommand(packageManager)} to get started.`)
+    console.log('\nRead the DOMStack docs: https://domstack.net')
   }
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error)
