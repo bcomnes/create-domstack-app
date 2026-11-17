@@ -1,4 +1,5 @@
 import { createInterface } from 'node:readline/promises'
+import { styleText } from 'node:util'
 import type { CliOptions } from './index.ts'
 import type { Features } from './template.ts'
 
@@ -17,31 +18,59 @@ export async function chooseFeatures (options: CliOptions): Promise<Features> {
   const controller = new AbortController()
   rl.on('SIGINT', () => controller.abort())
   try {
-    async function choose<const T extends string> (question: string, values: T[], fallback: T): Promise<T> {
+    async function choose<const T extends string> (
+      title: string,
+      choices: { value: T, label: string, hint?: string }[],
+      fallback: T
+    ): Promise<T> {
+      const defaultLabel = choices.find(choice => choice.value === fallback)!.label
+      const rows = choices.map((choice, index) => {
+        const label = choice.value === fallback ? styleText('bold', choice.label) : choice.label
+        const hint = choice.value === fallback ? 'default' : choice.hint
+        return `  ${styleText('cyan', `${index + 1})`)} ${label}${hint ? styleText('dim', ` (${hint})`) : ''}`
+      })
+      const question = `\n${styleText(['bold', 'cyan'], title)}\n${rows.join('\n')}\n${styleText('dim', `Enter a number or name (default: ${defaultLabel})`)}\n${styleText('cyan', '› ')}`
       while (true) {
         const answer = (await rl.question(question, { signal: controller.signal })).trim().toLowerCase()
         if (!answer) return fallback
-        const value = values.find((value, index) => value === answer || String(index + 1) === answer)
-        if (value) return value
-        console.log(`Choose ${values.join(', ')} or a listed number.`)
+        const choice = choices.find((choice, index) => choice.value === answer || choice.label.toLowerCase() === answer || String(index + 1) === answer)
+        if (choice) return choice.value
+        console.log(styleText('yellow', `Choose a number from 1 to ${choices.length}, or a listed name.`))
       }
     }
 
     async function confirm (question: string, fallback: boolean): Promise<boolean> {
       const defaultLabel = fallback ? 'yes' : 'no'
+      const answerHint = `[${fallback ? `${styleText('bold', 'Y')}/n` : `y/${styleText('bold', 'N')}`}]`
+      const prompt = `\n${styleText(['bold', 'cyan'], question)} ${answerHint} ${styleText('dim', `(default: ${defaultLabel})`)}\n${styleText('cyan', '› ')}`
       while (true) {
-        const answer = (await rl.question(`${question} [${fallback ? 'Y/n' : 'y/N'}] (default: ${defaultLabel}): `, { signal: controller.signal })).trim().toLowerCase()
+        const answer = (await rl.question(prompt, { signal: controller.signal })).trim().toLowerCase()
         if (!answer) return fallback
         if (answer === 'y' || answer === 'yes') return true
         if (answer === 'n' || answer === 'no') return false
-        console.log(`Enter y or n (default: ${defaultLabel}).`)
+        console.log(styleText('yellow', `Enter y or n (default: ${defaultLabel}).`))
       }
     }
 
-    const language = options.language ?? await choose('Language: 1) TypeScript  2) JavaScript [1]: ', ['ts', 'js'], 'ts')
-    const framework = options.framework ?? await choose('JSX/TSX: 1) None  2) Preact (recommended)  3) React [1]: ', ['none', 'preact', 'react'], 'none')
+    const language = options.language ?? await choose('Source language', [
+      { value: 'ts', label: 'TypeScript' },
+      { value: 'js', label: 'JavaScript' },
+    ], defaults.language)
+    const framework = options.framework ?? await choose('Browser JSX runtime', [
+      { value: 'none', label: 'None' },
+      { value: 'preact', label: 'Preact', hint: 'recommended when using JSX' },
+      { value: 'react', label: 'React' },
+    ], defaults.framework)
     const tailwind = options.tailwind ?? await confirm('Set up Tailwind CSS?', defaults.tailwind)
-    const deploy = options.deploy ?? await choose('Deployment: 1) None  2) GitHub Pages  3) Neocities  4) Wix  5) Cloudflare  6) Vercel  7) Netlify [1]: ', ['none', 'github-pages', 'neocities', 'wix', 'cloudflare', 'vercel', 'netlify'], 'none')
+    const deploy = options.deploy ?? await choose('Deployment', [
+      { value: 'none', label: 'None' },
+      { value: 'github-pages', label: 'GitHub Pages' },
+      { value: 'neocities', label: 'Neocities' },
+      { value: 'wix', label: 'Wix' },
+      { value: 'cloudflare', label: 'Cloudflare' },
+      { value: 'vercel', label: 'Vercel' },
+      { value: 'netlify', label: 'Netlify' },
+    ], defaults.deploy)
     return { language, framework, tailwind, deploy }
   } catch (error) {
     if (controller.signal.aborted) throw new Error('Setup cancelled; no files were created.')

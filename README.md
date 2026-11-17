@@ -15,6 +15,7 @@ npm create @domstack/app@latest my-app
 The npm `create` convention maps `@domstack/app` to this package, `@domstack/create-app`.
 In an interactive terminal, the command asks for the source language (TypeScript by default), browser JSX runtime (none by default, Preact recommended when wanted, or React), Tailwind CSS (off by default), and deployment (none by default, GitHub Pages, Neocities, Wix, Cloudflare, Vercel, or Netlify).
 Explicit flags skip their corresponding questions.
+Interactive menus list choices on separate lines, highlight defaults, and use Node's built-in terminal styling, respecting terminal color support and `NO_COLOR`.
 Boolean questions accept case-insensitive `y`/`n` (or `yes`/`no`), state their default, and use that default when you press Enter; Tailwind shows `[y/N] (default: no)`.
 Use `--yes` to skip all questions; non-interactive input also uses defaults for unspecified choices.
 The command creates the project, installs its dependencies, and ejects DOMStack's customizable default layout, global stylesheet, and client script in the selected language.

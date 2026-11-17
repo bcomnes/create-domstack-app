@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { syncBuiltinESMExports } from 'node:module'
+import { stripVTControlCharacters } from 'node:util'
 import readline from 'node:readline/promises'
 import test from 'node:test'
 import { parseArguments } from './index.ts'
@@ -45,7 +46,7 @@ test('interactive defaults, numbered choices, retry, and explicit-flag skipping'
   const mock = t.mock.method(readline, 'createInterface', () => ({
     on () {},
     async question (question: string) {
-      questions.push(question)
+      questions.push(stripVTControlCharacters(question))
       const answer = answers.shift()
       assert.notEqual(answer, undefined, 'unexpected question')
       return answer
@@ -63,7 +64,7 @@ test('interactive defaults, numbered choices, retry, and explicit-flag skipping'
     language: 'js', framework: 'preact', tailwind: false, deploy: 'neocities',
   })
   assert.equal(questions.length, 2)
-  assert.ok(questions.every(question => question.startsWith('Deployment:')))
+  assert.ok(questions.every(question => question.includes('\nDeployment\n')))
   assert.equal(closed, 2)
   answers = ['4']
   assert.equal((await chooseFeatures({ ...parseArguments(['--language', 'ts', '--framework', 'none']), tailwind: false })).deploy, 'wix')
@@ -82,7 +83,7 @@ test('boolean prompts accept case-insensitive yes/no, default on Enter, and reje
   const mock = t.mock.method(readline, 'createInterface', () => ({
     on () {},
     async question (question: string) {
-      questions.push(question)
+      questions.push(stripVTControlCharacters(question))
       const answer = answers.shift()
       assert.notEqual(answer, undefined, 'unexpected question')
       return answer
