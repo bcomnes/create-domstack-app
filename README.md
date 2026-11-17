@@ -2,210 +2,138 @@
 
 [![npm version](https://img.shields.io/npm/v/@domstack/create-app.svg)](https://www.npmjs.com/package/@domstack/create-app)
 [![Actions Status](https://github.com/bcomnes/create-domstack-app/workflows/tests/badge.svg)](https://github.com/bcomnes/create-domstack-app/actions)
-[![neostandard JavaScript style](https://img.shields.io/badge/code_style-neostandard-7fffff?style=flat&labelColor=ff80ff)](https://github.com/neostandard/neostandard)
 
-Create a new [DOMStack](https://github.com/bcomnes/domstack) app.
+Create a new [DOMStack](https://domstack.net) site with TypeScript or JavaScript, optional JSX and Tailwind, and a deployment workflow for your host.
 
-## Usage
-
-```sh
-npm create @domstack/app@latest my-app
-```
-
-The npm `create` convention maps `@domstack/app` to this package, `@domstack/create-app`.
-In an interactive terminal, the command asks for the source language (TypeScript by default), browser JSX runtime (none by default, Preact recommended when wanted, or React), Tailwind CSS (off by default), and deployment (none by default, GitHub Pages, Neocities, Wix, Cloudflare, Vercel, or Netlify).
-Explicit flags skip their corresponding questions.
-Interactive menus list choices on separate lines, highlight defaults, and use Node's built-in terminal styling, respecting terminal color support and `NO_COLOR`.
-Boolean questions accept case-insensitive `y`/`n` (or `yes`/`no`), state their default, and use that default when you press Enter; Tailwind shows `[y/N] (default: no)`.
-Use `--yes` to skip all questions; non-interactive input also uses defaults for unspecified choices.
-The command creates the project, installs its dependencies, and ejects DOMStack's customizable default layout, global stylesheet, and client script in the selected language.
+## Get started
 
 ```sh
-npm create @domstack/app@latest my-app -- --yes --language ts --framework preact --tailwind --deploy github-pages
-```
-
-### Options
-
-| Flag | Choices / behavior |
-| --- | --- |
-| `--language` | `ts` (default), `js` |
-| `--framework` | `none` (default), `preact`, `react` |
-| `--tailwind` | Enable Tailwind CSS (default: disabled) |
-| `--deploy` | `none` (default), `github-pages`, `neocities`, `wix`, `cloudflare`, `vercel`, `netlify` |
-| `-y`, `--yes` | Skip prompts, retaining explicit choices |
-| `--no-install` | Write starter files without installing or ejecting |
-| `-h`, `--help` | Show usage |
-| `-v`, `--version` | Show the generator version |
-
-The target directory defaults to `domstack-app` and must be empty if it already exists.
-
-### Upstream release requirement
-
-The minimum supported DOMStack release is `12.0.0-beta.9`, verified on npm to support `--eject --language ts|js --yes` after upstream PR #320 merged.
-The generator declares `@domstack/static` as `^12.0.0-beta.9`.
-
-To create the starter files without installing dependencies or ejecting DOMStack's defaults:
-
-```sh
-npm create @domstack/app@latest my-app -- --no-install
-```
-
-With `--no-install`, first run `npm install`, `npx domstack --eject --language ts --yes`, and `npm install` inside the project to install DOMStack, eject its defaults, and install the added dependencies.
-Use `--language js` instead for a JavaScript project.
-Eject overwrites the default layout, stylesheet, and client, so only use it in a fresh project or after backing up customizations.
-For Tailwind projects, manual eject also replaces `src/globals/global.css`; restore that file to `@import "tailwindcss" source("../");` afterward.
-Automatic setup restores the Tailwind stylesheet for you.
-
-Then start the development server:
-
-```sh
-cd my-app
+npm create @domstack/app@latest my-site
+cd my-site
 npm run dev
 ```
 
-## Generated project
+Pick your options when prompted.
+The defaults are TypeScript, no JSX, no Tailwind, and no deployment setup.
+Dependencies are installed for you.
 
-```text
-my-app/
-├── src/
-│   ├── globals/
-│   │   ├── global.client.ts
-│   │   └── global.css
-│   ├── layouts/
-│   │   └── root.layout.ts
-│   ├── page.md
-│   └── style.css
-├── .gitignore
-├── package.json
-├── tsconfig.json
-└── README.md
+You can also use pnpm:
+
+```sh
+pnpm create @domstack/app@latest my-site
 ```
 
-The generated scripts are:
+Requires Node.js 22.18+ or 24+ and npm 10+.
+Wix projects require Node.js 24.22.1+.
 
-- `npm run dev` starts DOMStack in watch mode.
-- `npm run build` builds the site into `public/`.
-- `npm run preview` builds once and serves the site.
-- `npm run typecheck` checks TypeScript projects without emitting files.
+## Options
 
-JavaScript selection generates `.js` layout/client files and omits TypeScript configuration and tooling.
-Preact or React adds a browser counter at `/interactive/` using `.tsx` or `.jsx`, plus an esbuild settings file with the selected JSX runtime.
-Tailwind adds the esbuild plugin and a global Tailwind import; starter styles use a base layer so utility classes can override them.
+Pass flags to skip individual questions, or use `--yes` to accept the defaults for anything you haven't specified.
 
-The generated project uses the `@domstack/static` version range declared in this generator's `devDependencies`.
-Its default layout, global stylesheet, and client script are ejected into `src/` so they can be customized.
+```sh
+npm create @domstack/app@latest my-site -- --yes --framework preact --tailwind --deploy cloudflare
+```
+
+| Option | Choices | Default |
+| --- | --- | --- |
+| `--language` | `ts`, `js` | `ts` |
+| `--framework` | `none`, `preact`, `react` | `none` |
+| `--tailwind` | Enable Tailwind CSS | Off |
+| `--deploy` | `none`, `github-pages`, `neocities`, `wix`, `cloudflare`, `vercel`, `netlify` | `none` |
+| `-y`, `--yes` | Skip remaining questions | |
+| `--no-install` | Skip dependency installation and default file setup | |
+| `-h`, `--help` | Show help | |
+| `-v`, `--version` | Show version | |
+
+If you leave out the directory, it uses `domstack-app`.
+An existing directory must be empty.
+
+## Working on your site
+
+Your pages live in `src/`.
+The starter includes a home page, styles, and DOMStack's default layout and client script, copied into your project so you can edit them.
+Choosing Preact or React also adds an example at `/interactive/`.
+
+```sh
+npm run dev        # Build and watch for changes
+npm run build      # Build into public/
+npm run preview    # Build and serve locally
+npm run typecheck  # Check types (TypeScript projects)
+```
+
+See the [DOMStack docs](https://domstack.net) for pages, layouts, assets, and configuration.
 
 ## Deployment
 
-`--deploy github-pages` generates `.github/workflows/github-pages.yml` and a language-appropriate `src/globals/global.vars.ts` or `.js`.
-Select **GitHub Actions** in repository Settings → Pages.
-The workflow obtains `base_path` from `actions/configure-pages` and passes it through `DOMSTACK_BASE_PATH` to DOMStack's `basePath` variable, supporting repository sites, user/organization sites, and configured custom domains.
-The default layout uses this variable for script and stylesheet URLs; it does not rewrite arbitrary page links or image URLs.
-Use relative content URLs or account for `vars.basePath` in rendered content.
-Local builds use an empty base path.
+Choose a host during setup or pass `--deploy <host>`.
+The starter adds the config, scripts, and GitHub Actions workflow for that host.
+Your new project's README has the setup instructions.
+You'll still need a hosting account and, for most hosts, to log in or link your project before deploying.
+Creating a starter doesn't publish anything.
 
-`--deploy neocities` generates `.github/workflows/neocities.yml` using [bcomnes/deploy-to-neocities@v3](https://github.com/bcomnes/deploy-to-neocities), the GitHub Action built on [async-neocities](https://github.com/bcomnes/async-neocities).
-`async-neocities` itself is an npm API client and interactive CLI, not an action to put in `uses:`.
-The generated action needs no additional npm dependency.
-Add your site's Neocities API key as the repository Actions secret `NEOCITIES_API_TOKEN`; never commit it.
-The workflow uploads `public/`, preserves orphaned remote files (`cleanup: false`), and leaves Supporter-only file support disabled.
-Enable those settings only when appropriate for your site and account.
+| Host | Setup |
+| --- | --- |
+| GitHub Pages | Select **GitHub Actions** in your repository's **Settings → Pages**. |
+| Neocities | Add your site's API key as the `NEOCITIES_API_TOKEN` repository secret. |
+| Wix | Run `npm run wix:login`, then initialize a Wix project or use your existing site's migration config. Set `site.outputDirectory` to `./public`. |
+| Cloudflare | Run `npm run cloudflare:login`, then check the Worker name in `wrangler.jsonc`. A custom domain is optional. |
+| Vercel | Run `npm run vercel:login`, then `npm run vercel -- link`. |
+| Netlify | Create a site, run `npm run netlify:login`, then `npm run netlify -- link`. |
 
-`--deploy wix` adds the local `@wix/cli` dev dependency, `wix:login`, `wix`, and `deploy` scripts, and `.github/workflows/wix.yml`.
-It also generates `AGENTS.md` with numbered compatibility notes covering the static build/release flow, favicon interception, video range requests and Safari playback, credential handling, optional business SDK integration, migration identities, and hosted verification.
-The generated project's Node requirement is `>=24.22.1` for compatibility with the Wix CLI.
-For a new Wix project, follow the generated README to log in and run `npm create @wix/new@latest init`; for an existing site's migration, use the owner's downloaded `wix.config.json` instead.
-Set `site.outputDirectory` to `./public`, preserve the real Wix project IDs, and commit that config before enabling deployment.
-The starter does not invent project IDs or write an unconfigured `wix.config.json`.
-Add a dedicated Wix API key with the required release permissions and target-site access as the repository Actions secret `WIX_API_KEY`.
-The workflow builds with DOMStack, authenticates through `wix login --api-key`, and uploads the output with `wix release`.
-For local deployment after setup, run `npm run deploy` to build and release.
-`.env*` and `.wix/` are ignored; no owner password, copied CLI tokens, or environment pull is needed by the generated workflow.
-This option configures static hosting only; Wix Forms, OAuth visitor integration, and migration finalization are separate tasks.
+Wix, Cloudflare, Vercel, and Netlify starters include `npm run deploy` for local deployment after setup.
+GitHub Pages and Neocities deploy through GitHub Actions.
 
-`--deploy cloudflare` uses Cloudflare Workers Static Assets.
-It adds Wrangler as a local dev dependency, `cloudflare:login`, `wrangler`, and `deploy` scripts, `wrangler.jsonc`, and `.github/workflows/cloudflare.yml`.
-The config derives a valid Worker name from the project directory, enables `workers.dev`, serves `public/`, and uses `404-page` handling without a Worker script or SPA fallback.
-Review the name before deploying; `npm run deploy` runs Wrangler, whose build hook invokes `npm run build` once before upload.
-For local deployment, run `npm run cloudflare:login` first; `npm run deploy -- --dry-run` checks the build/config without publishing.
-For GitHub Actions, add `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` as repository Actions secrets, using a token with Workers Scripts edit access to the intended account.
-The account ID is an identifier rather than a credential.
-The generated workflow invokes `npm run deploy` and relies on Wrangler's build hook instead of building twice.
-`.wrangler/`, `.dev.vars*`, and `.env*` are ignored.
-No custom domain is required; add one later through Cloudflare Workers settings if needed.
+### GitHub Actions
 
-`--deploy vercel` adds the local Vercel CLI, `vercel:login`, `vercel`, and `deploy` scripts, `vercel.json`, and `.github/workflows/vercel.yml`.
-The config uses the Other framework preset, `npm run build`, and `public` as the output directory.
-Log in and link the intended project with `npm run vercel:login` and `npm run vercel -- link` before deploying locally with `npm run deploy`.
-Local deployment uploads source for Vercel to build remotely; the GitHub Actions workflow instead pulls production settings, runs `vercel build --prod`, and deploys `.vercel/output` with `--prebuilt`.
-Add repository Actions secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID`; the IDs come from `.vercel/project.json` after linking.
-`.vercel/` and `.env*` are ignored.
-Choose either this workflow or Vercel's native Git integration to avoid duplicate production deployments.
+The workflows deploy on pushes to `main` and can also be run manually.
+Change the branch in the workflow if yours is different.
+Add these secrets under your repository's **Settings → Secrets and variables → Actions**:
 
-`--deploy netlify` adds the local Netlify CLI, `netlify:login`, `netlify`, and `deploy` scripts, `netlify.toml`, and `.github/workflows/netlify.yml`.
-The generated project's Node requirement is `>=22.13.0` for the CLI.
-The config builds with `npm run build` and publishes `public`, without adding SPA catch-all routing or server code.
-Create/select a site in Netlify, log in with `npm run netlify:login`, and run `npm run netlify -- link` before local deployment.
-`npm run deploy` runs `netlify deploy --prod --context production`; the current CLI builds by default, so no separate CI build step is needed.
-Add repository Actions secrets `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID`, and keep `.netlify/` and `.env*` out of Git.
-Choose either the generated workflow or Netlify's native Git deployment to avoid duplicate production deployments.
+| Host | Repository secrets |
+| --- | --- |
+| GitHub Pages | None |
+| Neocities | `NEOCITIES_API_TOKEN` |
+| Wix | `WIX_API_KEY` |
+| Cloudflare | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` |
+| Vercel | `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` |
+| Netlify | `NETLIFY_AUTH_TOKEN`, `NETLIFY_SITE_ID` |
 
-All workflows run on pushes to `main` or manual dispatch, build with Node.js 24, and serialize deployments without cancelling an active deployment.
-Change the branch if needed.
-They use `npm install` so a lockfile is not required; commit a npm lockfile and switch to `npm ci` for reproducible installs, or adapt the workflow to your preferred package manager.
-Generated READMEs include provider-specific setup instructions.
-No hosting account is created and no deployment occurs during scaffolding.
+Use a Wix API key with release permissions and access to your site, or a Cloudflare token with Workers Scripts edit access to your account.
+Vercel's project and organization IDs are in `.vercel/project.json` after linking.
+Keep credentials out of Git.
 
-## Other package managers
+If you use Vercel or Netlify's own Git integration, remove the generated workflow so each push only deploys once.
+The workflows use `npm install`; if you commit a `package-lock.json`, you can switch them to `npm ci`.
+
+### A couple of host details
+
+GitHub Pages supports repository subpaths through `vars.basePath`.
+Use relative links in your content, or include that prefix when building URLs yourself.
+
+The Wix option sets up hosting.
+Connecting Wix Forms or migrating an existing site takes additional setup.
+Wix starters include an `AGENTS.md` with compatibility notes for working on the site with a coding agent.
+
+## Skipping installation
+
+Use `--no-install` if you want to handle dependencies yourself.
+Then, inside the new project, run:
 
 ```sh
-pnpm create @domstack/app@latest my-app
+npm install
+npx domstack --eject --language ts --yes
+npm install
 ```
 
-## Programmatic API
+Use `--language js` for a JavaScript project.
+The eject command writes the default layout, stylesheet, and client script, so run it before customizing those files.
+If you selected Tailwind, restore `src/globals/global.css` afterward to:
 
-```js
-import { createApp } from '@domstack/create-app'
-
-await createApp({
-  targetDirectory: 'my-app',
-  install: false,
-  language: 'ts',
-  framework: 'preact',
-  tailwind: true,
-  deploy: 'github-pages',
-})
+```css
+@import "tailwindcss" source("../");
 ```
 
-`createApp` is asynchronous and returns a promise with `directory`, `packageName`, `packageManager`, `installed`, and `ejected` fields.
-It does not prompt; unspecified features use the same defaults as `--yes`.
-Set `eject: false` to install without ejecting, or `packageManager` to `npm`, `pnpm`, `yarn`, or `bun` to override detection.
-With `install: false`, no eject runs regardless of the `eject` option.
-
-## Maintaining starter dependencies
-
-Generated dependency ranges are read from this package's `devDependencies` in `package.json`, rather than duplicated in templates.
-Dependabot updates those ranges, and subsequent generator releases pass them on to newly created apps.
-The generator reads manifest metadata only; its development dependencies are not installed when users run the published CLI.
-Browser runtimes still go into the generated app's `dependencies`, while build and type-checking tools go into its `devDependencies`.
-Dependencies added by DOMStack's eject command remain controlled by DOMStack itself.
-
-## Validation
-
-```sh
-npm test
-npm run smoke:registry
-npm run smoke:local -- ../domstack
-```
-
-The registry smoke check builds and packs this generator, installs the packed CLI, and creates all fourteen projects using actual published dependencies, with no local npm wrapper or manifest modifications.
-It reports the installed DOMStack version and checks builds, TS typechecking, Tailwind output, and GitHub Pages asset prefixes.
-
-The optional local smoke check requires a DOMStack checkout with development dependencies installed and the new eject interface.
-It builds declarations in a disposable upstream copy (never in that checkout), builds and packs this generator, installs the packed CLI, and creates fourteen projects covering JS/TS, no JSX/Preact/React, Tailwind, and all deployment selections.
-It installs a local packed DOMStack through a temporary npm wrapper without changing the generated registry dependency range, then checks builds, TS typechecking, Tailwind output, and GitHub Pages asset prefixes.
-Both checks install dependencies from npm, require network access unless cached, and do not deploy anything.
-Temporary projects and generated declaration/JavaScript build outputs are cleaned afterward.
+Normal setup handles this for you.
 
 ## License
 
