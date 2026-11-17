@@ -43,7 +43,10 @@ test('creates a DOMStack project without installing dependencies', async (t) => 
   assert.equal(packageJson.name, 'my-site')
   assert.equal(packageJson.private, true)
   assert.equal(packageJson.devDependencies['@domstack/static'], domstackVersion)
-  assert.equal(packageJson.scripts.dev, 'domstack --watch')
+  assert.equal(packageJson.scripts.start, 'domstack --watch')
+  assert.equal(packageJson.scripts['production-preview'], 'domstack --serve')
+  assert.equal(packageJson.scripts.dev, undefined)
+  assert.equal(packageJson.scripts.preview, undefined)
   assert.match(
     readFileSync(join(targetDirectory, 'src/page.md'), 'utf8'),
     /Welcome to DOMStack/
@@ -117,8 +120,8 @@ test('detects the invoking package manager', () => {
 })
 
 test('formats development commands for each package manager', () => {
-  assert.equal(packageManagerRunCommand('npm'), 'npm run dev')
-  assert.equal(packageManagerRunCommand('pnpm'), 'pnpm dev')
-  assert.equal(packageManagerRunCommand('yarn'), 'yarn dev')
-  assert.equal(packageManagerRunCommand('bun'), 'bun run dev')
+  assert.equal(packageManagerRunCommand('npm'), 'npm start')
+  assert.equal(packageManagerRunCommand('pnpm'), 'pnpm start')
+  assert.equal(packageManagerRunCommand('yarn'), 'yarn start')
+  assert.equal(packageManagerRunCommand('bun'), 'bun run start')
 })

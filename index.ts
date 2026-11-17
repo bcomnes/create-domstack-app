@@ -175,9 +175,9 @@ export async function createApp (
     private: true,
     type: 'module',
     scripts: {
-      dev: 'domstack --watch',
+      start: 'domstack --watch',
       build: 'domstack',
-      preview: 'domstack --serve',
+      'production-preview': 'domstack --serve',
       ...template.scripts,
       ...deployment.scripts,
     },
@@ -221,9 +221,9 @@ export async function createApp (
 }
 
 export function packageManagerRunCommand (packageManager: PackageManager): string {
-  if (packageManager === 'yarn') return 'yarn dev'
-  if (packageManager === 'pnpm') return 'pnpm dev'
-  return `${packageManager} run dev`
+  if (packageManager === 'yarn') return 'yarn start'
+  if (packageManager === 'pnpm') return 'pnpm start'
+  return `${packageManager} ${packageManager === 'npm' ? '' : 'run '}start`
 }
 
 function assertEmptyDirectory (directory: string): void {
@@ -315,8 +315,16 @@ A static site built with [DOMStack](https://github.com/bcomnes/domstack).
 ## Development
 
 \`\`\`sh
-npm run dev
+npm start
 \`\`\`
+
+## Production preview
+
+\`\`\`sh
+npm run production-preview
+\`\`\`
+
+Builds and serves production output without watching for changes.
 
 ## Production build
 

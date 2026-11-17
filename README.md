@@ -10,7 +10,7 @@ Create a new [DOMStack](https://domstack.net) site with TypeScript or JavaScript
 ```sh
 npm create @domstack/app@latest my-site
 cd my-site
-npm run dev
+npm start
 ```
 
 Pick your options when prompted.
@@ -55,9 +55,9 @@ The starter includes a home page, styles, and DOMStack's default layout and clie
 Choosing Preact or React also adds an example at `/interactive/`.
 
 ```sh
-npm run dev        # Build and watch for changes
+npm start        # Build and watch for changes
 npm run build      # Build into public/
-npm run preview    # Build and serve locally
+npm run production-preview    # Build and serve production output locally
 npm run typecheck  # Check types (TypeScript projects)
 ```
 
