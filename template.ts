@@ -1,26 +1,35 @@
+import { ejectFeatures } from '@domstack/static/lib/cli/eject-features.js'
 import { dependencyVersion } from './dependencies.ts'
 import type { Deployment } from './deployment.ts'
 
 export type Language = 'ts' | 'js'
+export type Css = 'mine' | 'tailwind' | 'none'
 export type Framework = 'none' | 'preact' | 'react'
 
 export interface Features {
   language: Language
   framework: Framework
-  tailwind: boolean
+  css: Css
+  tailwind?: boolean
   deploy: Deployment
 }
 
-export function projectFeatures (features: Omit<Features, 'deploy'>): {
+export function projectFeatures (features: Omit<Features, 'deploy' | 'css'> & { css?: Css }): {
   files: Record<string, string>
   dependencies: Record<string, string>
   devDependencies: Record<string, string>
   scripts: Record<string, string>
 } {
-  const { language, framework, tailwind } = features
-  const files: Record<string, string> = {}
-  const dependencies: Record<string, string> = {}
+  const { language, framework } = features
+  const css = resolveCss(features)
+  const tailwind = css === 'tailwind'
+  const integration = ejectFeatures({ language, framework, css, module: true })
+  const files: Record<string, string> = Object.fromEntries(
+    Object.entries(integration.files).map(([path, content]) => [`src/${path}`, content])
+  )
+  const dependencies = integration.dependencies
   const devDependencies: Record<string, string> = {
+    ...integration.devDependencies,
     'npm-run-all2': dependencyVersion('npm-run-all2'),
     eslint: dependencyVersion('eslint'),
     neostandard: dependencyVersion('neostandard'),
@@ -76,21 +85,7 @@ ${language === 'js' && framework !== 'none' ? "    // Track component references
     }, null, 2)}\n`
   }
 
-  if (framework === 'preact') {
-    dependencies['preact'] = dependencyVersion('preact')
-  } else if (framework === 'react') {
-    dependencies['react'] = dependencyVersion('react')
-    dependencies['react-dom'] = dependencyVersion('react-dom')
-    if (language === 'ts') {
-      devDependencies['@types/react'] = dependencyVersion('@types/react')
-      devDependencies['@types/react-dom'] = dependencyVersion('@types/react-dom')
-    }
-  }
-
   if (tailwind) {
-    devDependencies['esbuild-plugin-tailwindcss'] = dependencyVersion('esbuild-plugin-tailwindcss')
-    files['src/globals/global.css'] = `@import "tailwindcss" source("../");
-`
     // Keep starter styles in a layer so utilities can override them.
     files['src/style.css'] = `@layer base {
   :root {
@@ -103,30 +98,6 @@ ${language === 'js' && framework !== 'none' ? "    // Track component references
     max-width: 48rem;
     padding: 4rem 1.5rem;
   }
-}
-`
-  }
-
-  if (framework !== 'none' || tailwind) {
-    const typeImport = language === 'ts'
-      ? "import type { BuildOptions } from '@domstack/static/types.js'\n"
-      : "/** @import { BuildOptions } from '@domstack/static/types.js' */\n"
-    const pluginImport = tailwind ? "import tailwindPlugin from 'esbuild-plugin-tailwindcss'\n" : ''
-    const annotation = language === 'js' ? '/** @param {BuildOptions} settings */\n' : ''
-    const parameter = language === 'ts' ? 'settings: BuildOptions' : 'settings'
-    const returnType = language === 'ts' ? ': BuildOptions' : ''
-    const jsxSettings = framework === 'none'
-      ? ''
-      : `  settings.jsx = 'automatic'
-  settings.jsxImportSource = '${framework}'
-`
-    const pluginSettings = tailwind
-      ? `  settings.plugins = [...(settings.plugins ?? []), tailwindPlugin()]
-`
-      : ''
-    files[`src/globals/esbuild.settings.${language}`] = `${typeImport}${pluginImport}
-${annotation}export default function esbuildSettingsOverride (${parameter})${returnType} {
-${jsxSettings}${pluginSettings}  return settings
 }
 `
   }
@@ -168,4 +139,15 @@ if (container) {
   }
 
   return { files, dependencies, devDependencies, scripts }
+}
+
+export function resolveCss (options: { css?: Css, tailwind?: boolean }): Css {
+  const { css, tailwind } = options
+  if (css !== undefined && !['mine', 'tailwind', 'none'].includes(css)) {
+    throw new Error('--css must be mine, tailwind, or none.')
+  }
+  if (css !== undefined && tailwind !== undefined && (css === 'tailwind') !== tailwind) {
+    throw new Error('--tailwind conflicts with the selected --css option.')
+  }
+  return css ?? (tailwind ? 'tailwind' : 'mine')
 }

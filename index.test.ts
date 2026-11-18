@@ -1,3 +1,5 @@
+import { ejectFeatures } from '@domstack/static/lib/cli/eject-features.js'
+import type { Css, Framework, Language } from './template.ts'
 import assert from 'node:assert/strict'
 import {
   existsSync,
@@ -125,3 +127,56 @@ test('formats development commands for each package manager', () => {
   assert.equal(packageManagerRunCommand('yarn'), 'yarn start')
   assert.equal(packageManagerRunCommand('bun'), 'bun run start')
 })
+
+test('parses CSS choices and validates the legacy alias in either argument order', () => {
+  for (const css of ['mine', 'tailwind', 'none']) {
+    assert.equal(parseArguments(['--css', css]).css, css)
+  }
+  for (const value of [undefined, 'invalid', '--yes']) {
+    assert.throws(() => parseArguments(['--css', ...(value ? [value] : [])]), /--css must be/)
+  }
+  for (const css of ['mine', 'none']) {
+    assert.throws(() => parseArguments(['--css', css, '--tailwind']), /conflicts/)
+    assert.throws(() => parseArguments(['--tailwind', '--css', css]), /conflicts/)
+  }
+  assert.equal(parseArguments(['--tailwind', '--css', 'tailwind']).css, 'tailwind')
+  assert.equal(parseArguments(['--css', 'tailwind', '--tailwind']).tailwind, true)
+})
+
+test('rejects conflicting programmatic CSS choices before creating the project', async (t) => {
+  const parent = temporaryDirectory()
+  t.after(() => rmSync(parent, { recursive: true, force: true }))
+  const targetDirectory = join(parent, 'site')
+  for (const css of ['mine', 'none'] as const) {
+    await assert.rejects(createApp({ targetDirectory, install: false, css, tailwind: true }), /conflicts/)
+    assert.equal(existsSync(targetDirectory), false)
+  }
+  await assert.rejects(createApp({ targetDirectory, install: false, css: 'tailwind', tailwind: false }), /conflicts/)
+  assert.equal(existsSync(targetDirectory), false)
+})
+
+for (const language of ['ts', 'js'] satisfies Language[]) {
+  for (const framework of ['none', 'preact', 'react'] satisfies Framework[]) {
+    for (const css of ['mine', 'tailwind', 'none'] satisfies Css[]) {
+      test(`no-install scaffolds upstream ${language}/${framework}/${css} integration and exact manual instructions`, async (t) => {
+        const parent = temporaryDirectory()
+        t.after(() => rmSync(parent, { recursive: true, force: true }))
+        const targetDirectory = join(parent, 'site')
+        await createApp({ targetDirectory, install: false, language, framework, css })
+        const integration = ejectFeatures({ language, framework, css, module: true })
+        for (const [path, contents] of Object.entries(integration.files)) {
+          assert.equal(readFileSync(join(targetDirectory, 'src', path), 'utf8'), contents)
+        }
+        const manifest = JSON.parse(readFileSync(join(targetDirectory, 'package.json'), 'utf8'))
+        assert.deepEqual(manifest.dependencies, integration.dependencies)
+        for (const [name, range] of Object.entries(integration.devDependencies)) {
+          assert.equal(manifest.devDependencies[name], range)
+        }
+        const readme = readFileSync(join(targetDirectory, 'README.md'), 'utf8')
+        assert.ok(readme.includes(`npx domstack eject --language ${language} --framework ${framework} --css ${css} --yes`))
+        assert.doesNotMatch(readme, /restore/)
+        assert.equal(existsSync(join(targetDirectory, `src/layouts/root.layout.${language}`)), false)
+      })
+    }
+  }
+}

@@ -5,6 +5,7 @@ import readline from 'node:readline/promises'
 import test from 'node:test'
 import { parseArguments } from './index.ts'
 import { chooseFeatures } from './prompts.ts'
+import { domstackBanner } from '@domstack/static/lib/cli/banner.js'
 
 function tty (value: boolean): () => void {
   const input = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY')
@@ -19,13 +20,13 @@ function tty (value: boolean): () => void {
   }
 }
 
-const defaults = { language: 'ts', framework: 'none', tailwind: false, deploy: 'none' }
+const defaults = { language: 'ts', framework: 'none', css: 'mine', deploy: 'none' }
 
 test('non-interactive input uses defaults and preserves explicit choices', async (t) => {
   t.after(tty(false))
   assert.deepEqual(await chooseFeatures(parseArguments([])), defaults)
   assert.deepEqual(await chooseFeatures(parseArguments(['--language', 'js', '--framework', 'react', '--tailwind', '--deploy', 'neocities'])), {
-    language: 'js', framework: 'react', tailwind: true, deploy: 'neocities',
+    language: 'js', framework: 'react', css: 'tailwind', deploy: 'neocities',
   })
 })
 
@@ -42,6 +43,7 @@ test('interactive defaults, numbered choices, retry, and explicit-flag skipping'
   t.after(tty(true))
   let answers = ['', '', '', '']
   const questions: string[] = []
+  const messages = t.mock.method(console, 'log', () => {})
   let closed = 0
   const mock = t.mock.method(readline, 'createInterface', () => ({
     on () {},
@@ -56,12 +58,13 @@ test('interactive defaults, numbered choices, retry, and explicit-flag skipping'
   syncBuiltinESMExports()
   t.after(() => { mock.mock.restore(); syncBuiltinESMExports() })
   assert.deepEqual(await chooseFeatures(parseArguments([])), defaults)
+  assert.equal(stripVTControlCharacters(String(messages.mock.calls[0]?.arguments[0])), `\n${domstackBanner}`)
   assert.equal(questions.length, 4)
   assert.match(questions[3] ?? '', /Deployment/)
   answers = ['invalid', '3']
   questions.length = 0
   assert.deepEqual(await chooseFeatures({ ...parseArguments(['--language', 'js', '--framework', 'preact']), tailwind: false }), {
-    language: 'js', framework: 'preact', tailwind: false, deploy: 'neocities',
+    language: 'js', framework: 'preact', css: 'mine', deploy: 'neocities',
   })
   assert.equal(questions.length, 2)
   assert.ok(questions.every(question => question.includes('\nDeployment\n')))
@@ -76,7 +79,7 @@ test('interactive defaults, numbered choices, retry, and explicit-flag skipping'
   assert.equal((await chooseFeatures({ ...parseArguments(['--language', 'ts', '--framework', 'none']), tailwind: false })).deploy, 'netlify')
 })
 
-test('boolean prompts accept case-insensitive yes/no, default on Enter, and reject numbers', async (t) => {
+test('CSS prompt accepts names and numbers, defaults to mine, and retries invalid input', async (t) => {
   t.after(tty(true))
   let answers: string[] = []
   const questions: string[] = []
@@ -94,17 +97,13 @@ test('boolean prompts accept case-insensitive yes/no, default on Enter, and reje
   syncBuiltinESMExports()
   t.after(() => { mock.mock.restore(); syncBuiltinESMExports() })
   const options = parseArguments(['--language', 'ts', '--framework', 'none', '--deploy', 'none'])
-  for (const answer of ['y', 'Y', 'yes', 'YES', ' y ']) {
-    answers = [answer]
-    assert.equal((await chooseFeatures(options)).tailwind, true)
+  for (const [answer, css] of [['', 'mine'], ['1', 'mine'], ['mine.css', 'mine'], ['2', 'tailwind'], ['TAILWIND', 'tailwind'], ['3', 'none'], ['none', 'none']]) {
+    answers = [answer!]
+    assert.equal((await chooseFeatures(options)).css, css)
   }
-  for (const answer of ['n', 'N', 'no', 'NO', '', '  ']) {
-    answers = [answer]
-    assert.equal((await chooseFeatures(options)).tailwind, false)
-  }
-  answers = ['1', '2', 'maybe', 'Y']
-  assert.equal((await chooseFeatures(options)).tailwind, true)
-  assert.equal(messages.mock.calls.filter(call => stripVTControlCharacters(String(call.arguments[0])).startsWith('Enter y or n')).length, 3)
-  assert.ok(questions.every(question => question.includes('[y/N] (default: no)')))
+  answers = ['invalid', '4', 'tailwind']
+  assert.equal((await chooseFeatures(options)).css, 'tailwind')
+  assert.equal(messages.mock.calls.filter(call => stripVTControlCharacters(String(call.arguments[0])).startsWith('Choose a number')).length, 2)
+  assert.ok(questions.every(question => question.includes('default: mine.css')))
   assert.deepEqual(answers, [])
 })

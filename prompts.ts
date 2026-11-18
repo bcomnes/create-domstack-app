@@ -1,31 +1,23 @@
 import { createInterface } from 'node:readline/promises'
 import { styleText } from 'node:util'
+import { domstackBanner } from '@domstack/static/lib/cli/banner.js'
 import type { CliOptions } from './index.ts'
+import { resolveCss } from './template.ts'
 import type { Features } from './template.ts'
 
 export async function chooseFeatures (options: CliOptions): Promise<Features> {
-  const defaults: Features = { language: 'ts', framework: 'none', tailwind: false, deploy: 'none' }
+  const cssChoice = options.css !== undefined || options.tailwind !== undefined ? resolveCss(options) : undefined
+  const defaults: Features = { language: 'ts', framework: 'none', css: 'mine', deploy: 'none' }
   if (options.yes || !process.stdin.isTTY || !process.stdout.isTTY) {
     return {
       language: options.language ?? defaults.language,
       framework: options.framework ?? defaults.framework,
-      tailwind: options.tailwind ?? defaults.tailwind,
+      css: cssChoice ?? defaults.css,
       deploy: options.deploy ?? defaults.deploy,
     }
   }
 
-  console.log(styleText('cyan', `\n                                                            +##.
-.:.                                                         ###
-####.                                    :+                 ###
-:#####.    .:+.   .:  :.  ::      :+.   +##.   :+.     .+:  ###.:.
- :#####+ :#####+ :##+########: .+#####.#####. +####. .+#### ######:
-.##: ###.###:###.+###+######## +##:###..###. :#####+ #####+ ###:###:
-.##: ###.##+ :##. ### +##..### ### .#+  ###   #:.##+ ###..  ###.##:
-.##: ###.##+ :##. ### +##. ### +######: ###   #::##+ ###    #####+
-.##: ###.##+ :##. ### +##..### .###:##+ ###   #####+ ###    ######.
-:### ###.###.:##. ### +##..###  +#: ##+ ### .+##:##+ ###+.  ###.##+
-.######+ ####### .### ###: ###:.######: ###+.#######:+####+.### ####
-  :##+.   :##+.   +#+ .##. :##. :##+.   :##: .##++#+  :###. +#: .##:`))
+  console.log(styleText('cyan', `\n${domstackBanner}`))
 
   const rl = createInterface({ input: process.stdin, output: process.stdout })
   const controller = new AbortController()
@@ -52,19 +44,6 @@ export async function chooseFeatures (options: CliOptions): Promise<Features> {
       }
     }
 
-    async function confirm (question: string, fallback: boolean): Promise<boolean> {
-      const defaultLabel = fallback ? 'yes' : 'no'
-      const answerHint = `[${fallback ? `${styleText('bold', 'Y')}/n` : `y/${styleText('bold', 'N')}`}]`
-      const prompt = `\n${styleText(['bold', 'cyan'], question)} ${answerHint} ${styleText('dim', `(default: ${defaultLabel})`)}\n${styleText('cyan', '› ')}`
-      while (true) {
-        const answer = (await rl.question(prompt, { signal: controller.signal })).trim().toLowerCase()
-        if (!answer) return fallback
-        if (answer === 'y' || answer === 'yes') return true
-        if (answer === 'n' || answer === 'no') return false
-        console.log(styleText('yellow', `Enter y or n (default: ${defaultLabel}).`))
-      }
-    }
-
     const language = options.language ?? await choose('Source language', [
       { value: 'ts', label: 'TypeScript' },
       { value: 'js', label: 'JavaScript' },
@@ -74,7 +53,11 @@ export async function chooseFeatures (options: CliOptions): Promise<Features> {
       { value: 'preact', label: 'Preact', hint: 'recommended when using JSX' },
       { value: 'react', label: 'React' },
     ], defaults.framework)
-    const tailwind = options.tailwind ?? await confirm('Set up Tailwind CSS?', defaults.tailwind)
+    const css = cssChoice ?? await choose('CSS', [
+      { value: 'mine', label: 'mine.css' },
+      { value: 'tailwind', label: 'Tailwind CSS' },
+      { value: 'none', label: 'None' },
+    ], defaults.css)
     const deploy = options.deploy ?? await choose('Deployment', [
       { value: 'none', label: 'None' },
       { value: 'github-pages', label: 'GitHub Pages' },
@@ -84,7 +67,7 @@ export async function chooseFeatures (options: CliOptions): Promise<Features> {
       { value: 'vercel', label: 'Vercel' },
       { value: 'netlify', label: 'Netlify' },
     ], defaults.deploy)
-    return { language, framework, tailwind, deploy }
+    return { language, framework, css, deploy }
   } catch (error) {
     if (controller.signal.aborted) throw new Error('Setup cancelled; no files were created.')
     throw error

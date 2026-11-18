@@ -50,8 +50,8 @@ for (const language of languages) {
       assert.equal(manifest.devDependencies.vercel, deploy === 'vercel' ? dependencyVersion('vercel') : undefined)
       assert.equal(manifest.devDependencies['netlify-cli'], deploy === 'netlify' ? dependencyVersion('netlify-cli') : undefined)
       assert.equal(existsSync(join(directory, 'AGENTS.md')), deploy === 'wix')
-      assert.ok(readme.includes(`--eject --language ${language} --yes`))
-      assert.match(readme, /after manual eject, restore/)
+      assert.ok(readme.includes(`eject --language ${language} --framework preact --css tailwind --yes`))
+      assert.doesNotMatch(readme, /restore/)
       assert.match(readFileSync(join(directory, 'src/interactive/page.html'), 'utf8'), /href="\.\.\/"/)
       if (deploy === 'none') {
         assert.deepEqual(result, { files: {}, readme: '' })

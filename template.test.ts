@@ -1,8 +1,9 @@
+import { ejectFeatures } from '@domstack/static/lib/cli/eject-features.js'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { projectFeatures } from './template.ts'
-import type { Framework, Language } from './template.ts'
+import type { Css, Framework, Language } from './template.ts'
 
 const versions = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).devDependencies
 
@@ -11,9 +12,11 @@ const frameworks: Framework[] = ['none', 'preact', 'react']
 
 for (const language of languages) {
   for (const framework of frameworks) {
-    for (const tailwind of [false, true]) {
-      test(`${language}/${framework}/tailwind=${tailwind}`, () => {
-        const result = projectFeatures({ language, framework, tailwind })
+    for (const css of ['mine', 'tailwind', 'none'] satisfies Css[]) {
+      test(`${language}/${framework}/css=${css}`, () => {
+        const tailwind = css === 'tailwind'
+        const integration = ejectFeatures({ language, framework, css, module: true })
+        const result = projectFeatures({ language, framework, css })
         const { files, dependencies, devDependencies, scripts } = result
         assert.equal(scripts['test'], 'run-s test:*')
         assert.equal(scripts['test:eslint'], 'eslint .')
@@ -41,11 +44,13 @@ for (const language of languages) {
           assert.equal(devDependencies['@types/node'], versions['@types/node'])
         }
 
-        assert.equal(dependencies['preact'], framework === 'preact' ? versions['preact'] : undefined)
-        assert.equal(dependencies['react'], framework === 'react' ? versions['react'] : undefined)
-        assert.equal(dependencies['react-dom'], framework === 'react' ? versions['react-dom'] : undefined)
-        assert.equal(devDependencies['@types/react'], framework === 'react' && language === 'ts' ? versions['@types/react'] : undefined)
-        assert.equal(devDependencies['@types/react-dom'], framework === 'react' && language === 'ts' ? versions['@types/react-dom'] : undefined)
+        assert.deepEqual(dependencies, integration.dependencies)
+        for (const [name, range] of Object.entries(integration.devDependencies)) {
+          assert.equal(devDependencies[name], range)
+        }
+        for (const [path, contents] of Object.entries(integration.files)) {
+          assert.equal(files[`src/${path}`], contents)
+        }
 
         const settings = files[`src/globals/esbuild.settings.${language}`]
         assert.equal(Boolean(settings), framework !== 'none' || tailwind)
@@ -62,16 +67,25 @@ for (const language of languages) {
           assert.equal(files['src/interactive/page.html'], undefined)
         }
 
-        assert.equal(devDependencies['esbuild-plugin-tailwindcss'], tailwind ? versions['esbuild-plugin-tailwindcss'] : undefined)
-        assert.equal(Boolean(files['src/globals/global.css']), tailwind)
+        assert.equal(devDependencies['esbuild-plugin-tailwindcss'], integration.devDependencies['esbuild-plugin-tailwindcss'])
+        assert.equal(files['src/globals/global.css'], integration.files['globals/global.css'])
         assert.equal(Boolean(files['src/style.css']), tailwind)
         if (tailwind) {
           assert.match(settings ?? '', /settings.plugins = \[\.\.\.\(settings.plugins \?\? \[\]\), tailwindPlugin\(\)\]/)
           assert.match(files['src/globals/global.css'] ?? '', /@import "tailwindcss" source\("\.\.\/"\)/)
           assert.match(files['src/style.css'] ?? '', /@layer base/)
         }
-        assert.deepEqual(result, projectFeatures({ language, framework, tailwind }))
+        assert.deepEqual(result, projectFeatures({ language, framework, css }))
       })
     }
   }
 }
+
+test('legacy tailwind API inputs produce the same integration', () => {
+  for (const tailwind of [false, true]) {
+    assert.deepEqual(
+      projectFeatures({ language: 'ts', framework: 'preact', tailwind }),
+      projectFeatures({ language: 'ts', framework: 'preact', css: tailwind ? 'tailwind' : 'mine' })
+    )
+  }
+})
