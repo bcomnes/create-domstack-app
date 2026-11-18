@@ -10,7 +10,7 @@ import { domstackBanner } from '@domstack/static/lib/cli/banner.js'
 function run (...args: string[]): string {
   return stripVTControlCharacters(execFileSync(process.execPath, [
     ...process.execArgv,
-    new URL('./bin.ts', import.meta.url).pathname,
+    new URL('../src/bin.ts', import.meta.url).pathname,
     ...args,
   ], { encoding: 'utf8', timeout: 10000 }))
 }
@@ -25,7 +25,7 @@ test('help starts with the shared DOMStack banner', () => {
 })
 
 test('version output remains machine-readable without a banner', () => {
-  const manifest = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))
+  const manifest = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
   assert.equal(run('--version'), `${manifest.version}\n`)
 })
 

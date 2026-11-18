@@ -4,13 +4,11 @@
     "declaration": true,
     "declarationMap": true,
     "emitDeclarationOnly": false,
-    "noEmit": false
+    "noEmit": false,
+    "rootDir": "src",
+    "outDir": "dist"
   },
-  "exclude": [
-    "**/*.js",
-    "**/*.test.ts",
-    "node_modules",
-    "coverage",
-    ".github"
+  "include": [
+    "src/**/*.ts"
   ]
 }

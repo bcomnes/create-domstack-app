@@ -2,10 +2,10 @@ import { ejectFeatures } from '@domstack/static/lib/cli/eject-features.js'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
-import { projectFeatures } from './template.ts'
-import type { Css, Framework, Language } from './template.ts'
+import { projectFeatures } from '../src/template.ts'
+import type { Css, Framework, Language } from '../src/template.ts'
 
-const versions = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).devDependencies
+const versions = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).devDependencies
 
 const languages: Language[] = ['ts', 'js']
 const frameworks: Framework[] = ['none', 'preact', 'react']

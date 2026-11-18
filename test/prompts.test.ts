@@ -3,8 +3,8 @@ import { syncBuiltinESMExports } from 'node:module'
 import { stripVTControlCharacters } from 'node:util'
 import readline from 'node:readline/promises'
 import test from 'node:test'
-import { parseArguments } from './index.ts'
-import { chooseFeatures } from './prompts.ts'
+import { parseArguments } from '../src/index.ts'
+import { chooseFeatures } from '../src/prompts.ts'
 import { domstackBanner } from '@domstack/static/lib/cli/banner.js'
 
 function tty (value: boolean): () => void {

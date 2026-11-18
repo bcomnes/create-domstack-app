@@ -11,11 +11,14 @@
     "verbatimModuleSyntax": true
   },
   "include": [
-    "**/*"
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "scripts/**/*.ts"
   ],
   "exclude": [
     "**/*.js",
     "node_modules",
+    "dist",
     "coverage",
     ".github"
   ]

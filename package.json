@@ -34,21 +34,8 @@
     "static-site-generator"
   ],
   "files": [
-    "bin.js",
-    "dependencies.js",
-    "deployment.js",
-    "deployment.d.ts",
-    "deployment.d.ts.map",
-    "wix-agents.js",
-    "wix-agents.d.ts",
-    "wix-agents.d.ts.map",
-    "prompts.js",
-    "template.js",
-    "template.d.ts",
-    "template.d.ts.map",
-    "index.js",
-    "index.d.ts",
-    "index.d.ts.map",
+    "dist",
+    "src",
     "CHANGELOG.md"
   ],
   "license": "MIT",
@@ -56,11 +43,11 @@
     "access": "public"
   },
   "type": "module",
-  "module": "index.js",
-  "main": "index.js",
-  "types": "index.d.ts",
+  "module": "dist/index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "bin": {
-    "create-domstack-app": "./bin.js"
+    "create-domstack-app": "./dist/bin.js"
   },
   "repository": {
     "type": "git",
@@ -69,18 +56,17 @@
   "scripts": {
     "prepublishOnly": "releasearoni",
     "postpublish": "npm run clean",
+    "prepack": "npm run build",
     "test": "run-s test:*",
     "test:lint": "eslint .",
     "test:tsc": "tsc",
     "test:node-test": "node --experimental-test-coverage --test-reporter=spec --test-reporter=lcov --test-reporter-destination=stdout --test-reporter-destination=lcov.info --test",
     "version": "releasearoni version",
-    "smoke:local": "node smoke.ts",
-    "smoke:registry": "node smoke.ts --registry",
-    "build": "npm run clean && run-p build:*",
+    "smoke:local": "node scripts/smoke.ts",
+    "smoke:registry": "node scripts/smoke.ts --registry",
+    "build": "npm run clean && npm run build:declaration",
     "build:declaration": "tsc -p declaration.tsconfig.json",
-    "clean": "run-p clean:*",
-    "clean:declarations-top": "rm -rf $(find . -maxdepth 1 -type f -name '*.d.ts*')",
-    "clean:js-top": "rm -rf $(find . -maxdepth 1 -type f -name '*.js' ! -name '*.config.js')"
+    "clean": "rm -rf dist"
   },
   "funding": {
     "type": "individual",

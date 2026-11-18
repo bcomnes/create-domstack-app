@@ -1,5 +1,5 @@
 import { ejectFeatures } from '@domstack/static/lib/cli/eject-features.js'
-import type { Css, Framework, Language } from './template.ts'
+import type { Css, Framework, Language } from '../src/template.ts'
 import assert from 'node:assert/strict'
 import {
   existsSync,
@@ -18,7 +18,7 @@ import {
   detectPackageManager,
   packageManagerRunCommand,
   parseArguments,
-} from './index.ts'
+} from '../src/index.ts'
 
 function temporaryDirectory (): string {
   return mkdtempSync(join(tmpdir(), 'create-domstack-app-'))

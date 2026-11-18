@@ -3,11 +3,11 @@ import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { createApp, parseArguments } from './index.ts'
-import { projectDeployment } from './deployment.ts'
-import type { Deployment } from './deployment.ts'
-import type { Language } from './template.ts'
-import { dependencyVersion } from './dependencies.ts'
+import { createApp, parseArguments } from '../src/index.ts'
+import { projectDeployment } from '../src/deployment.ts'
+import type { Deployment } from '../src/deployment.ts'
+import type { Language } from '../src/template.ts'
+import { dependencyVersion } from '../src/dependencies.ts'
 
 const deployments: Deployment[] = ['none', 'github-pages', 'neocities', 'wix', 'cloudflare', 'vercel', 'netlify']
 const languages: Language[] = ['ts', 'js']

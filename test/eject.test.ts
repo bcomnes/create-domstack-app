@@ -6,10 +6,10 @@ import { syncBuiltinESMExports } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { createApp } from './index.ts'
-import type { PackageManager } from './index.ts'
+import { createApp } from '../src/index.ts'
+import type { PackageManager } from '../src/index.ts'
 import { ejectFeatures } from '@domstack/static/lib/cli/eject-features.js'
-import type { Css, Language } from './template.ts'
+import type { Css, Language } from '../src/template.ts'
 
 const managers: PackageManager[] = ['npm', 'pnpm', 'yarn', 'bun']
 const languages: Language[] = ['ts', 'js']

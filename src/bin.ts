@@ -35,7 +35,7 @@ try {
     console.log(`${styleText('cyan', domstackBanner)}\n\n${usage}`)
   } else if (options.version) {
     const packageJson = JSON.parse(
-      readFileSync(new URL('./package.json', import.meta.url), 'utf8')
+      readFileSync(new URL('../package.json', import.meta.url), 'utf8')
     )
     console.log(packageJson.version)
   } else {

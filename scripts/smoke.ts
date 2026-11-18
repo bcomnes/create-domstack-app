@@ -7,7 +7,7 @@ import { join, resolve, sep } from 'node:path'
 const upstreamArgument = process.argv[2]
 if (!upstreamArgument) throw new Error('Usage: npm run smoke:registry or npm run smoke:local -- /path/to/domstack (with its development dependencies installed)')
 const registry = upstreamArgument === '--registry'
-const root = import.meta.dirname
+const root = resolve(import.meta.dirname, '..')
 const npm = process.env['npm_execpath']
 if (!npm) throw new Error('Run this smoke check with npm run smoke:local or npm run smoke:registry.')
 const temporary = mkdtempSync(join(tmpdir(), 'domstack-packed-smoke-'))
@@ -50,9 +50,12 @@ try {
   const manifest = JSON.parse(readFileSync(join(generator, 'package.json'), 'utf8'))
   const range = manifest.dependencies['@domstack/static']
   assert.ok(!range.startsWith('file:'))
-  for (const path of ['index.js', 'index.d.ts', 'template.js', 'template.d.ts', 'deployment.js', 'deployment.d.ts', 'wix-agents.js', 'wix-agents.d.ts', 'dependencies.js', 'prompts.js']) {
-    assert.ok(existsSync(join(generator, path)), `missing packed ${path}`)
+  for (const path of ['bin.js', 'index.js', 'index.d.ts', 'template.js', 'template.d.ts', 'deployment.js', 'deployment.d.ts', 'wix-agents.js', 'wix-agents.d.ts', 'dependencies.js', 'prompts.js']) {
+    assert.ok(existsSync(join(generator, 'dist', path)), `missing packed dist/${path}`)
   }
+  assert.ok(existsSync(join(generator, 'src/index.ts')), 'missing declaration-map source')
+  assert.ok(!existsSync(join(generator, 'test')), 'tests should not be published')
+  assert.ok(!existsSync(join(generator, 'scripts')), 'development scripts should not be published')
 
   writeFileSync(join(consumer, 'api.ts'), `import { createApp } from '@domstack/create-app'
 import type { CreateAppResult } from '@domstack/create-app'
@@ -112,7 +115,7 @@ process.exit(result.status ?? 1)
     const { language, framework, css, deploy } = features
     const directory = join(temporary, `${language}-${framework}-${css}-${deploy}`)
     console.log(`\nSmoke: ${JSON.stringify(features)}`)
-    execFileSync(process.execPath, [join(generator, 'bin.js'), directory, '--yes', '--language', language, '--framework', framework, ...(language === 'js' && framework === 'react' && css === 'tailwind' ? ['--tailwind'] : ['--css', css]), '--deploy', deploy], {
+    execFileSync(process.execPath, [join(generator, manifest.bin['create-domstack-app']), directory, '--yes', '--language', language, '--framework', framework, ...(language === 'js' && framework === 'react' && css === 'tailwind' ? ['--tailwind'] : ['--css', css]), '--deploy', deploy], {
       cwd: consumer, env, stdio: 'inherit', timeout: 120_000,
     })
     const generatedManifest = JSON.parse(readFileSync(join(directory, 'package.json'), 'utf8'))

@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import test from 'node:test'
-import { dependencyVersion } from './dependencies.ts'
-import { domstackVersion } from './index.ts'
+import { dependencyVersion } from '../src/dependencies.ts'
+import { domstackVersion } from '../src/index.ts'
 
 test('reads exact declared ranges, not installed versions', () => {
-  const { dependencies, devDependencies } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))
+  const { dependencies, devDependencies } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
   for (const [name, range] of Object.entries({ ...devDependencies, ...dependencies })) {
     assert.equal(dependencyVersion(name), range)
   }
