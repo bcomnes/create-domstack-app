@@ -30,7 +30,7 @@ try {
     // Build only a disposable upstream copy; never emit into the upstream checkout.
     const copy = join(temporary, 'upstream')
     mkdirSync(copy)
-    for (const path of ['bin.js', 'index.js', 'types.ts', 'types', 'lib', 'eject-deps/package.json', 'package.json', 'tsconfig.json', 'declaration.tsconfig.json']) {
+    for (const path of ['bin.js', 'index.js', 'types.ts', 'types', 'lib', 'package.json', 'tsconfig.json', 'declaration.tsconfig.json']) {
       cpSync(join(upstream, path), join(copy, path), {
         recursive: true,
         filter: source => !/\.d\.ts(?:\.map)?$/.test(source) || source.startsWith(join(upstream, 'types') + sep) || source.endsWith('-types.d.ts'),
