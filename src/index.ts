@@ -9,7 +9,7 @@ import {
 import { basename, dirname, resolve } from 'node:path'
 import { dependencyVersion } from './dependencies.ts'
 import { projectDeployment } from './deployment.ts'
-import { projectFeatures, resolveCss } from './template.ts'
+import { projectFeatures, resolveCss, resolveTypeScript } from './template.ts'
 import type { Features } from './template.ts'
 
 export const defaultTargetDirectory = 'domstack-app'
@@ -76,17 +76,17 @@ export function parseArguments (arguments_: string[]): CliOptions {
   const features: Partial<Features> = {}
 
   for (const [index, argument] of arguments_.entries()) {
-    if (['--language', '--framework', '--css', '--deploy'].includes(arguments_[index - 1] ?? '')) continue
+    if (['--typescript', '--framework', '--css', '--deploy'].includes(arguments_[index - 1] ?? '')) continue
     if (argument === '--deploy') {
       const value = arguments_[index + 1]
       if (value !== 'none' && value !== 'github-pages' && value !== 'neocities' && value !== 'wix' && value !== 'cloudflare' && value !== 'vercel' && value !== 'netlify') throw new Error('--deploy must be none, github-pages, neocities, wix, cloudflare, vercel, or netlify.')
       features.deploy = value
       continue
     }
-    if (argument === '--language') {
+    if (argument === '--typescript') {
       const value = arguments_[index + 1]
-      if (value !== 'ts' && value !== 'js') throw new Error('--language must be ts or js.')
-      features.language = value
+      if (value !== 'none' && value !== 'vanilla' && value !== '@voxpelli/tsconfig') throw new Error('--typescript must be none, vanilla, or @voxpelli/tsconfig.')
+      features.typescript = value
       continue
     }
     if (argument === '--framework') {
@@ -128,6 +128,8 @@ export function parseArguments (arguments_: string[]): CliOptions {
     throw new Error('Only one target directory may be specified.')
   }
 
+  resolveTypeScript(features)
+
   return {
     ...features,
     yes,
@@ -159,14 +161,15 @@ export async function createApp (
   const packageManager = options.packageManager ?? detectPackageManager()
   const install = options.install ?? true
   const eject = options.eject ?? true
+  const { language, typescript } = resolveTypeScript(options)
   const features: Features = {
-    language: options.language ?? 'ts',
+    typescript,
     framework: options.framework ?? 'none',
     css: resolveCss(options),
     deploy: options.deploy ?? 'none',
   }
   const template = projectFeatures(features)
-  const deployment = projectDeployment(features.deploy, features.language, packageName)
+  const deployment = projectDeployment(features.deploy, language, packageName)
 
   assertEmptyDirectory(directory)
   mkdirSync(directory, { recursive: true })
@@ -277,7 +280,8 @@ async function ejectDefaults (
   packageManager: PackageManager,
   features: Features
 ): Promise<void> {
-  const flags = ['eject', '--language', features.language, '--framework', features.framework, '--css', features.css, '--yes']
+  const { language } = resolveTypeScript(features)
+  const flags = ['eject', '--language', language, '--framework', features.framework, '--css', features.css, '--yes']
   const argumentsByPackageManager = {
     npm: ['exec', '--', 'domstack', ...flags],
     pnpm: ['exec', 'domstack', ...flags],
@@ -309,6 +313,7 @@ async function ejectDefaults (
 }
 
 function projectReadme (packageName: string, features: Features): string {
+  const { language } = resolveTypeScript(features)
   return `# ${packageName}
 
 A static site built with [DOMStack](https://github.com/bcomnes/domstack).
@@ -325,8 +330,8 @@ npm start
 npm test
 \`\`\`
 
-Runs ESLint, Node tests${features.language === 'ts' ? ', and TypeScript checks' : ''}.
-Add individual checks as \`test:*\` scripts to include them in \`npm test\`.
+Runs ESLint, Node tests${language === 'ts' ? ', and TypeScript checks' : ''}.
+Add individual checks as \`test:*\` scripts to include them in \`npm test\`.${features.typescript === '@voxpelli/tsconfig' ? '\n\nTypeScript extends `@voxpelli/tsconfig/node26.json`, with DOMStack-specific browser, bundler, and no-emit settings in `tsconfig.json`.' : ''}
 
 ## Production preview
 
@@ -344,7 +349,7 @@ npm run build
 
 The generated site is written to \`public/\`.
 With default setup, \`src/layouts/\` and \`src/globals/\` contain customizable DOMStack defaults.
-If setup used \`--no-install\`, run \`npm install\`, \`npx domstack eject --language ${features.language} --framework ${features.framework} --css ${features.css} --yes\`, and \`npm install\` to eject them and install their dependencies.
+If setup used \`--no-install\`, run \`npm install\`, \`npx domstack eject --language ${language} --framework ${features.framework} --css ${features.css} --yes\`, and \`npm install\` to eject them and install their dependencies.
 Eject checks existing integration settings before writing; run it before customizing the generated defaults.
 This setup requires a DOMStack release supporting \`domstack eject --language ts|js --framework none|preact|react --css mine|tailwind|none --yes\`.
 `

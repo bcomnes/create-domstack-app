@@ -21,7 +21,9 @@ test('help starts with the shared DOMStack banner', () => {
   assert.equal(help.split(domstackBanner).length, 2)
   assert.match(help, /Usage:/)
   assert.match(help, /--css mine\|tailwind\|none/)
+  assert.match(help, /--typescript none\|vanilla\|@voxpelli\/tsconfig/)
   assert.doesNotMatch(help, /--tailwind/)
+  assert.doesNotMatch(help, /--language/)
 })
 
 test('version output remains machine-readable without a banner', () => {
@@ -32,7 +34,17 @@ test('version output remains machine-readable without a banner', () => {
 test('no-install output includes the exact eject choices without CSS restoration', (t) => {
   const directory = mkdtempSync(join(tmpdir(), 'domstack-bin-'))
   t.after(() => rmSync(directory, { recursive: true, force: true }))
-  const output = run(join(directory, 'site'), '--yes', '--no-install', '--language', 'js', '--framework', 'react', '--css', 'tailwind')
+  const output = run(join(directory, 'site'), '--yes', '--no-install', '--typescript', 'none', '--framework', 'react', '--css', 'tailwind')
   assert.match(output, /domstack eject --language js --framework react --css tailwind --yes/)
   assert.doesNotMatch(output, /restore/)
+})
+
+test('CLI selects the shared TypeScript preset without a language flag', (t) => {
+  const directory = mkdtempSync(join(tmpdir(), 'domstack-bin-typescript-'))
+  t.after(() => rmSync(directory, { recursive: true, force: true }))
+  const target = join(directory, 'site')
+  const output = run(target, '--yes', '--no-install', '--typescript', '@voxpelli/tsconfig')
+  const config = JSON.parse(readFileSync(join(target, 'tsconfig.json'), 'utf8'))
+  assert.equal(config.extends, '@voxpelli/tsconfig/node26.json')
+  assert.match(output, /domstack eject --language ts --framework none --css mine --yes/)
 })

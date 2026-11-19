@@ -2,15 +2,16 @@ import { createInterface } from 'node:readline/promises'
 import { styleText } from 'node:util'
 import { domstackBanner } from '@domstack/static/lib/cli/banner.js'
 import type { CliOptions } from './index.ts'
-import { resolveCss } from './template.ts'
+import { resolveCss, resolveTypeScript } from './template.ts'
 import type { Features } from './template.ts'
 
 export async function chooseFeatures (options: CliOptions): Promise<Features> {
+  const sourceChoice = options.typescript !== undefined ? resolveTypeScript(options) : undefined
   const cssChoice = options.css !== undefined ? resolveCss(options) : undefined
-  const defaults: Features = { language: 'ts', framework: 'none', css: 'mine', deploy: 'none' }
+  const defaults: Features = { typescript: 'vanilla', framework: 'none', css: 'mine', deploy: 'none' }
   if (options.yes || !process.stdin.isTTY || !process.stdout.isTTY) {
     return {
-      language: options.language ?? defaults.language,
+      typescript: sourceChoice?.typescript ?? defaults.typescript,
       framework: options.framework ?? defaults.framework,
       css: cssChoice ?? defaults.css,
       deploy: options.deploy ?? defaults.deploy,
@@ -44,10 +45,13 @@ export async function chooseFeatures (options: CliOptions): Promise<Features> {
       }
     }
 
-    const language = options.language ?? await choose('Source language', [
-      { value: 'ts', label: 'TypeScript' },
-      { value: 'js', label: 'JavaScript' },
-    ], defaults.language)
+    const source = sourceChoice ?? resolveTypeScript({
+      typescript: await choose('TypeScript', [
+        { value: 'none', label: 'None', hint: 'JavaScript' },
+        { value: 'vanilla', label: 'Vanilla' },
+        { value: '@voxpelli/tsconfig', label: '@voxpelli/tsconfig' },
+      ], 'vanilla'),
+    })
     const framework = options.framework ?? await choose('Browser JSX runtime', [
       { value: 'none', label: 'None' },
       { value: 'preact', label: 'Preact', hint: 'recommended when using JSX' },
@@ -67,7 +71,7 @@ export async function chooseFeatures (options: CliOptions): Promise<Features> {
       { value: 'vercel', label: 'Vercel' },
       { value: 'netlify', label: 'Netlify' },
     ], defaults.deploy)
-    return { language, framework, css, deploy }
+    return { typescript: source.typescript, framework, css, deploy }
   } catch (error) {
     if (controller.signal.aborted) throw new Error('Setup cancelled; no files were created.')
     throw error

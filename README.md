@@ -14,7 +14,7 @@ npm start
 ```
 
 Pick your options when prompted.
-The defaults are TypeScript, no JSX, mine.css, and no deployment setup.
+The defaults are vanilla TypeScript, no JSX, mine.css, and no deployment setup.
 Dependencies are installed for you.
 
 You can also use pnpm:
@@ -36,7 +36,7 @@ npm create @domstack/app@latest my-site -- --yes --framework preact --css tailwi
 
 | Option | Choices | Default |
 | --- | --- | --- |
-| `--language` | `ts`, `js` | `ts` |
+| `--typescript` | `none`, `vanilla`, `@voxpelli/tsconfig` | `vanilla` |
 | `--framework` | `none`, `preact`, `react` | `none` |
 | `--css` | `mine`, `tailwind`, `none` | `mine` |
 | `--deploy` | `none`, `github-pages`, `neocities`, `wix`, `cloudflare`, `vercel`, `netlify` | `none` |
@@ -47,6 +47,12 @@ npm create @domstack/app@latest my-site -- --yes --framework preact --css tailwi
 
 If you leave out the directory, it uses `domstack-app`.
 An existing directory must be empty.
+
+### TypeScript setup
+
+Choose `--typescript none` for JavaScript without a generated `tsconfig.json` or TypeScript checks.
+Choose `--typescript vanilla` for the standalone DOMStack TypeScript configuration, with no shared-config dependency.
+Choose `--typescript @voxpelli/tsconfig` to extend `@voxpelli/tsconfig/node26.json` and inherit its additional strict checks, while retaining DOMStack's browser types, bundler resolution, JSX settings, and no-emit workflow.
 
 ## Working on your site
 

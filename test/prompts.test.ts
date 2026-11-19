@@ -20,13 +20,13 @@ function tty (value: boolean): () => void {
   }
 }
 
-const defaults = { language: 'ts', framework: 'none', css: 'mine', deploy: 'none' }
+const defaults = { typescript: 'vanilla', framework: 'none', css: 'mine', deploy: 'none' }
 
 test('non-interactive input uses defaults and preserves explicit choices', async (t) => {
   t.after(tty(false))
   assert.deepEqual(await chooseFeatures(parseArguments([])), defaults)
-  assert.deepEqual(await chooseFeatures(parseArguments(['--language', 'js', '--framework', 'react', '--css', 'tailwind', '--deploy', 'neocities'])), {
-    language: 'js', framework: 'react', css: 'tailwind', deploy: 'neocities',
+  assert.deepEqual(await chooseFeatures(parseArguments(['--typescript', 'none', '--framework', 'react', '--css', 'tailwind', '--deploy', 'neocities'])), {
+    typescript: 'none', framework: 'react', css: 'tailwind', deploy: 'neocities',
   })
 })
 
@@ -63,20 +63,20 @@ test('interactive defaults, numbered choices, retry, and explicit-flag skipping'
   assert.match(questions[3] ?? '', /Deployment/)
   answers = ['invalid', '3']
   questions.length = 0
-  assert.deepEqual(await chooseFeatures(parseArguments(['--language', 'js', '--framework', 'preact', '--css', 'mine'])), {
-    language: 'js', framework: 'preact', css: 'mine', deploy: 'neocities',
+  assert.deepEqual(await chooseFeatures(parseArguments(['--typescript', 'none', '--framework', 'preact', '--css', 'mine'])), {
+    typescript: 'none', framework: 'preact', css: 'mine', deploy: 'neocities',
   })
   assert.equal(questions.length, 2)
   assert.ok(questions.every(question => question.includes('\nDeployment\n')))
   assert.equal(closed, 2)
   answers = ['4']
-  assert.equal((await chooseFeatures(parseArguments(['--language', 'ts', '--framework', 'none', '--css', 'mine']))).deploy, 'wix')
+  assert.equal((await chooseFeatures(parseArguments(['--typescript', 'vanilla', '--framework', 'none', '--css', 'mine']))).deploy, 'wix')
   answers = ['5']
-  assert.equal((await chooseFeatures(parseArguments(['--language', 'ts', '--framework', 'none', '--css', 'mine']))).deploy, 'cloudflare')
+  assert.equal((await chooseFeatures(parseArguments(['--typescript', 'vanilla', '--framework', 'none', '--css', 'mine']))).deploy, 'cloudflare')
   answers = ['6']
-  assert.equal((await chooseFeatures(parseArguments(['--language', 'ts', '--framework', 'none', '--css', 'mine']))).deploy, 'vercel')
+  assert.equal((await chooseFeatures(parseArguments(['--typescript', 'vanilla', '--framework', 'none', '--css', 'mine']))).deploy, 'vercel')
   answers = ['7']
-  assert.equal((await chooseFeatures(parseArguments(['--language', 'ts', '--framework', 'none', '--css', 'mine']))).deploy, 'netlify')
+  assert.equal((await chooseFeatures(parseArguments(['--typescript', 'vanilla', '--framework', 'none', '--css', 'mine']))).deploy, 'netlify')
 })
 
 test('CSS prompt accepts names and numbers, defaults to mine, and retries invalid input', async (t) => {
@@ -96,7 +96,7 @@ test('CSS prompt accepts names and numbers, defaults to mine, and retries invali
   const messages = t.mock.method(console, 'log', () => {})
   syncBuiltinESMExports()
   t.after(() => { mock.mock.restore(); syncBuiltinESMExports() })
-  const options = parseArguments(['--language', 'ts', '--framework', 'none', '--deploy', 'none'])
+  const options = parseArguments(['--typescript', 'vanilla', '--framework', 'none', '--deploy', 'none'])
   for (const [answer, css] of [['', 'mine'], ['1', 'mine'], ['mine.css', 'mine'], ['2', 'tailwind'], ['TAILWIND', 'tailwind'], ['3', 'none'], ['none', 'none']]) {
     answers = [answer!]
     assert.equal((await chooseFeatures(options)).css, css)
@@ -106,4 +106,52 @@ test('CSS prompt accepts names and numbers, defaults to mine, and retries invali
   assert.equal(messages.mock.calls.filter(call => stripVTControlCharacters(String(call.arguments[0])).startsWith('Choose a number')).length, 2)
   assert.ok(questions.every(question => question.includes('default: mine.css')))
   assert.deepEqual(answers, [])
+})
+
+test('TypeScript prompt offers none, vanilla, and the shared preset, with vanilla as default', async (t) => {
+  t.after(tty(true))
+  let answers: string[] = []
+  const questions: string[] = []
+  const mock = t.mock.method(readline, 'createInterface', () => ({
+    on () {},
+    async question (question: string) {
+      questions.push(stripVTControlCharacters(question))
+      const answer = answers.shift()
+      assert.notEqual(answer, undefined, 'unexpected question')
+      return answer
+    },
+    close () {},
+  }))
+  t.mock.method(console, 'log', () => {})
+  syncBuiltinESMExports()
+  t.after(() => { mock.mock.restore(); syncBuiltinESMExports() })
+  const options = parseArguments(['--framework', 'none', '--css', 'mine', '--deploy', 'none'])
+  for (const [answer, typescript] of [
+    ['', 'vanilla'], ['1', 'none'], ['NONE', 'none'], ['2', 'vanilla'], ['vanilla', 'vanilla'],
+    ['3', '@voxpelli/tsconfig'], ['@voxpelli/tsconfig', '@voxpelli/tsconfig'],
+  ]) {
+    answers = [answer!]
+    const features = await chooseFeatures(options)
+    assert.equal(features.typescript, typescript)
+    assert.equal(Object.hasOwn(features, 'language'), false)
+  }
+  answers = ['invalid', '4', '3']
+  assert.equal((await chooseFeatures(options)).typescript, '@voxpelli/tsconfig')
+  assert.ok(questions.every(question => question.includes('default: Vanilla')))
+  assert.deepEqual(answers, [])
+})
+
+test('explicit TypeScript choice skips questions and returns only feature modes', async (t) => {
+  t.after(tty(true))
+  const mock = t.mock.method(readline, 'createInterface', () => { throw new Error('Unexpected prompt') })
+  syncBuiltinESMExports()
+  t.after(() => { mock.mock.restore(); syncBuiltinESMExports() })
+  assert.deepEqual(await chooseFeatures(parseArguments(['--yes', '--typescript', '@voxpelli/tsconfig'])), {
+    ...defaults,
+    typescript: '@voxpelli/tsconfig',
+  })
+  assert.deepEqual(await chooseFeatures(parseArguments(['--yes', '--typescript', 'none'])), {
+    ...defaults,
+    typescript: 'none',
+  })
 })
