@@ -113,6 +113,9 @@ test('parses CLI arguments', () => {
   assert.equal(parseArguments(['--help']).help, true)
   assert.equal(parseArguments(['-v']).version, true)
   assert.throws(() => parseArguments(['--wat']), /Unknown option/)
+  for (const args of [['--language'], ['--language', 'js'], ['--typescript', 'vanilla', '--language', 'ts']]) {
+    assert.throws(() => parseArguments(args), /Unknown option: --language/)
+  }
   assert.throws(() => parseArguments(['one', 'two']), /Only one target directory/)
 })
 
@@ -170,7 +173,7 @@ for (const language of ['ts', 'js'] satisfies Language[]) {
         const parent = temporaryDirectory()
         t.after(() => rmSync(parent, { recursive: true, force: true }))
         const targetDirectory = join(parent, 'site')
-        await createApp({ targetDirectory, install: false, language, framework, css })
+        await createApp({ targetDirectory, install: false, typescript: language === 'js' ? 'none' : 'vanilla', framework, css })
         const integration = ejectFeatures({ language, framework, css, module: true })
         for (const [path, contents] of Object.entries(integration.files)) {
           assert.equal(readFileSync(join(targetDirectory, 'src', path), 'utf8'), contents)

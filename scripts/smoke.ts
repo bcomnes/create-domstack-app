@@ -3,6 +3,8 @@ import { execFileSync } from 'node:child_process'
 import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve, sep } from 'node:path'
+import { resolveTypeScript } from '../src/template.ts'
+import type { Features } from '../src/template.ts'
 
 const upstreamArgument = process.argv[2]
 if (!upstreamArgument) throw new Error('Usage: npm run smoke:registry or npm run smoke:local -- /path/to/domstack (with its development dependencies installed)')
@@ -61,7 +63,7 @@ try {
 import type { CreateAppResult } from '@domstack/create-app'
 
 const result: Promise<CreateAppResult> = createApp({
-  targetDirectory: 'site', language: 'ts', framework: 'preact', css: 'tailwind',
+  targetDirectory: 'site', typescript: '@voxpelli/tsconfig', framework: 'preact', css: 'tailwind',
   deploy: 'github-pages', install: false,
 })
 void result
@@ -92,29 +94,34 @@ process.exit(result.status ?? 1)
     chmodSync(wrapper, 0o755)
     env['PATH'] = `${bin}:${process.env['PATH'] ?? ''}`
   }
-  const cases = [
-    { language: 'ts', framework: 'preact', css: 'none', deploy: 'none' },
-    { language: 'js', framework: 'react', css: 'none', deploy: 'none' },
-    { language: 'ts', framework: 'none', css: 'mine', deploy: 'none' },
-    { language: 'js', framework: 'none', css: 'mine', deploy: 'none' },
-    { language: 'ts', framework: 'preact', css: 'tailwind', deploy: 'github-pages' },
-    { language: 'js', framework: 'react', css: 'tailwind', deploy: 'github-pages' },
-    { language: 'ts', framework: 'react', css: 'tailwind', deploy: 'neocities' },
-    { language: 'js', framework: 'preact', css: 'tailwind', deploy: 'neocities' },
-    { language: 'ts', framework: 'none', css: 'mine', deploy: 'wix' },
-    { language: 'js', framework: 'none', css: 'mine', deploy: 'wix' },
-    { language: 'ts', framework: 'none', css: 'mine', deploy: 'cloudflare' },
-    { language: 'js', framework: 'none', css: 'mine', deploy: 'cloudflare' },
-    { language: 'ts', framework: 'none', css: 'mine', deploy: 'vercel' },
-    { language: 'js', framework: 'none', css: 'mine', deploy: 'vercel' },
-    { language: 'ts', framework: 'none', css: 'mine', deploy: 'netlify' },
-    { language: 'js', framework: 'none', css: 'mine', deploy: 'netlify' },
+  const cases: Features[] = [
+    { typescript: '@voxpelli/tsconfig', framework: 'none', css: 'mine', deploy: 'none' },
+    { typescript: '@voxpelli/tsconfig', framework: 'preact', css: 'tailwind', deploy: 'github-pages' },
+    { typescript: '@voxpelli/tsconfig', framework: 'react', css: 'tailwind', deploy: 'github-pages' },
+    { typescript: 'vanilla', framework: 'preact', css: 'none', deploy: 'none' },
+    { typescript: 'none', framework: 'react', css: 'none', deploy: 'none' },
+    { typescript: 'vanilla', framework: 'none', css: 'mine', deploy: 'none' },
+    { typescript: 'none', framework: 'none', css: 'mine', deploy: 'none' },
+    { typescript: 'vanilla', framework: 'preact', css: 'tailwind', deploy: 'github-pages' },
+    { typescript: 'none', framework: 'react', css: 'tailwind', deploy: 'github-pages' },
+    { typescript: 'vanilla', framework: 'react', css: 'tailwind', deploy: 'neocities' },
+    { typescript: 'none', framework: 'preact', css: 'tailwind', deploy: 'neocities' },
+    { typescript: 'vanilla', framework: 'none', css: 'mine', deploy: 'wix' },
+    { typescript: 'none', framework: 'none', css: 'mine', deploy: 'wix' },
+    { typescript: 'vanilla', framework: 'none', css: 'mine', deploy: 'cloudflare' },
+    { typescript: 'none', framework: 'none', css: 'mine', deploy: 'cloudflare' },
+    { typescript: 'vanilla', framework: 'none', css: 'mine', deploy: 'vercel' },
+    { typescript: 'none', framework: 'none', css: 'mine', deploy: 'vercel' },
+    { typescript: 'vanilla', framework: 'none', css: 'mine', deploy: 'netlify' },
+    { typescript: 'none', framework: 'none', css: 'mine', deploy: 'netlify' },
   ]
   for (const features of cases) {
-    const { language, framework, css, deploy } = features
-    const directory = join(temporary, `${language}-${framework}-${css}-${deploy}`)
+    const { typescript, framework, css, deploy } = features
+    const { language } = resolveTypeScript(features)
+    const presetName = typescript === '@voxpelli/tsconfig' ? 'voxpelli' : typescript
+    const directory = join(temporary, `${presetName}-${framework}-${css}-${deploy}`)
     console.log(`\nSmoke: ${JSON.stringify(features)}`)
-    execFileSync(process.execPath, [join(generator, manifest.bin['create-domstack-app']), directory, '--yes', '--language', language, '--framework', framework, '--css', css, '--deploy', deploy], {
+    execFileSync(process.execPath, [join(generator, manifest.bin['create-domstack-app']), directory, '--yes', '--typescript', typescript, '--framework', framework, '--css', css, '--deploy', deploy], {
       cwd: consumer, env, stdio: 'inherit', timeout: 120_000,
     })
     const generatedManifest = JSON.parse(readFileSync(join(directory, 'package.json'), 'utf8'))

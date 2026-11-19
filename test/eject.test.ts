@@ -9,15 +9,19 @@ import test from 'node:test'
 import { createApp } from '../src/index.ts'
 import type { PackageManager } from '../src/index.ts'
 import { ejectFeatures } from '@domstack/static/lib/cli/eject-features.js'
-import type { Css, Language } from '../src/template.ts'
+import type { Css, Language, TypeScriptConfig } from '../src/template.ts'
 
 const managers: PackageManager[] = ['npm', 'pnpm', 'yarn', 'bun']
-const languages: Language[] = ['ts', 'js']
+const sources = [
+  { language: 'js', typescript: 'none' },
+  { language: 'ts', typescript: 'vanilla' },
+  { language: 'ts', typescript: '@voxpelli/tsconfig' },
+] satisfies { language: Language, typescript: TypeScriptConfig }[]
 
 for (const packageManager of managers) {
-  for (const language of languages) {
+  for (const { language, typescript } of sources) {
     for (const css of ['mine', 'tailwind', 'none'] satisfies Css[]) {
-      test(`ejects ${language}/${css} with ${packageManager} non-interactively without replacing upstream code`, async (t) => {
+      test(`ejects ${typescript}/${css} with ${packageManager} non-interactively without replacing upstream code`, async (t) => {
         const directory = mkdtempSync(join(tmpdir(), 'domstack-eject-'))
         t.after(() => rmSync(directory, { recursive: true, force: true }))
         const calls: string[][] = []
@@ -47,7 +51,7 @@ for (const packageManager of managers) {
         })
         syncBuiltinESMExports()
         t.after(() => { install.mock.restore(); spawn.mock.restore(); syncBuiltinESMExports() })
-        const resultPromise = createApp({ targetDirectory: directory, packageManager, language, framework: 'preact', css })
+        const resultPromise = createApp({ targetDirectory: directory, packageManager, typescript, framework: 'preact', css })
         assert.ok(resultPromise instanceof Promise)
         const result = await resultPromise
         assert.equal(result.ejected, true)

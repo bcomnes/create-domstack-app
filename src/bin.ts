@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import { styleText } from 'node:util'
 import { domstackBanner } from '@domstack/static/lib/cli/banner.js'
 import { chooseFeatures } from './prompts.ts'
+import { resolveTypeScript } from './template.ts'
 import {
   createApp,
   detectPackageManager,
@@ -17,7 +18,8 @@ Usage:
   npm create @domstack/app@latest [directory] [options]
 
 Options:
-  --language ts|js              Source language (default: ts)
+  --typescript none|vanilla|@voxpelli/tsconfig  TypeScript setup (default: vanilla)
+
   --framework none|preact|react  Browser JSX runtime (default: none)
   --css mine|tailwind|none      CSS integration (default: mine)
   --deploy none|github-pages|neocities|wix|cloudflare|vercel|netlify  Deployment workflow (default: none)
@@ -39,6 +41,7 @@ try {
     console.log(packageJson.version)
   } else {
     const features = await chooseFeatures(options)
+    const { language } = resolveTypeScript(features)
     const packageManager = detectPackageManager()
     console.log(`Creating a DOMStack app in ${options.targetDirectory}...`)
 
@@ -53,7 +56,7 @@ try {
     console.log(`Change into ${result.directory} first.`)
     if (!result.installed) {
       console.log(`Run ${packageManager} install to install dependencies.`)
-      console.log(`Then run the local domstack eject --language ${features.language} --framework ${features.framework} --css ${features.css} --yes command to eject the customizable defaults.`)
+      console.log(`Then run the local domstack eject --language ${language} --framework ${features.framework} --css ${features.css} --yes command to eject the customizable defaults.`)
       console.log(`Run ${packageManager} install again to install the added dependencies.`)
     }
     console.log(`Run ${packageManagerRunCommand(packageManager)} to get started.`)

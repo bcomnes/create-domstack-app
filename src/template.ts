@@ -3,23 +3,25 @@ import { dependencyVersion } from './dependencies.ts'
 import type { Deployment } from './deployment.ts'
 
 export type Language = 'ts' | 'js'
+export type TypeScriptConfig = 'none' | 'vanilla' | '@voxpelli/tsconfig'
 export type Css = 'mine' | 'tailwind' | 'none'
 export type Framework = 'none' | 'preact' | 'react'
 
 export interface Features {
-  language: Language
+  typescript: TypeScriptConfig
   framework: Framework
   css: Css
   deploy: Deployment
 }
 
-export function projectFeatures (features: Omit<Features, 'deploy' | 'css'> & { css?: Css }): {
+export function projectFeatures (features: Omit<Features, 'deploy' | 'css' | 'typescript'> & { typescript?: TypeScriptConfig, css?: Css }): {
   files: Record<string, string>
   dependencies: Record<string, string>
   devDependencies: Record<string, string>
   scripts: Record<string, string>
 } {
-  const { language, framework } = features
+  const { language, typescript } = resolveTypeScript(features)
+  const { framework } = features
   const css = resolveCss(features)
   const tailwind = css === 'tailwind'
   const integration = ejectFeatures({ language, framework, css, module: true })
@@ -55,7 +57,11 @@ ${language === 'js' && framework !== 'none' ? "    // Track component references
     devDependencies['@typescript/native'] = dependencyVersion('@typescript/native')
     devDependencies['@types/node'] = dependencyVersion('@types/node')
     scripts['test:typecheck'] = 'tsc --noEmit'
+    if (typescript === '@voxpelli/tsconfig') {
+      devDependencies['@voxpelli/tsconfig'] = dependencyVersion('@voxpelli/tsconfig')
+    }
     files['tsconfig.json'] = `${JSON.stringify({
+      ...(typescript === '@voxpelli/tsconfig' ? { extends: '@voxpelli/tsconfig/base-node-bare.json' } : {}),
       compilerOptions: {
         target: 'ES2024',
         module: 'ESNext',
@@ -138,6 +144,19 @@ if (container) {
   }
 
   return { files, dependencies, devDependencies, scripts }
+}
+
+export function resolveTypeScript ({ typescript }: { typescript?: TypeScriptConfig }): {
+  language: Language
+  typescript: TypeScriptConfig
+} {
+  if (typescript !== undefined && !['none', 'vanilla', '@voxpelli/tsconfig'].includes(typescript)) {
+    throw new Error('--typescript must be none, vanilla, or @voxpelli/tsconfig.')
+  }
+  const resolvedTypeScript = typescript ?? 'vanilla'
+  const resolvedLanguage = resolvedTypeScript === 'none' ? 'js' : 'ts'
+
+  return { language: resolvedLanguage, typescript: resolvedTypeScript }
 }
 
 export function resolveCss ({ css }: { css?: Css }): Css {
