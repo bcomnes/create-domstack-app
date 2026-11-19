@@ -45,6 +45,6 @@ test('CLI selects the shared TypeScript preset without a language flag', (t) => 
   const target = join(directory, 'site')
   const output = run(target, '--yes', '--no-install', '--typescript', '@voxpelli/tsconfig')
   const config = JSON.parse(readFileSync(join(target, 'tsconfig.json'), 'utf8'))
-  assert.equal(config.extends, '@voxpelli/tsconfig/base-node-bare.json')
+  assert.equal(config.extends, '@voxpelli/tsconfig/node26.json')
   assert.match(output, /domstack eject --language ts --framework none --css mine --yes/)
 })

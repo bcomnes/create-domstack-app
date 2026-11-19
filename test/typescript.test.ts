@@ -37,7 +37,7 @@ for (const typescript of choices) {
       assert.ok(existsSync(join(directory, `src/globals/global.vars.${language}`)))
       assert.ok(existsSync(join(directory, `src/globals/esbuild.settings.${language}`)))
       assert.ok(readme.includes(`domstack eject --language ${language} --framework ${framework} --css tailwind --yes`))
-      assert.equal(readme.includes('TypeScript extends `@voxpelli/tsconfig/base-node-bare.json`'), typescript === '@voxpelli/tsconfig')
+      assert.equal(readme.includes('TypeScript extends `@voxpelli/tsconfig/node26.json`'), typescript === '@voxpelli/tsconfig')
       if (framework !== 'none') {
         assert.ok(existsSync(join(directory, `src/interactive/client.${language === 'ts' ? 'tsx' : 'jsx'}`)))
       }

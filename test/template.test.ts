@@ -31,7 +31,7 @@ for (const typescript of typescriptConfigs) {
         assert.equal(devDependencies['@voxpelli/tsconfig'], typescript === '@voxpelli/tsconfig' ? versions['@voxpelli/tsconfig'] : undefined)
         if (language === 'ts') {
           const config = JSON.parse(files['tsconfig.json'] ?? '')
-          assert.equal(config.extends, typescript === '@voxpelli/tsconfig' ? '@voxpelli/tsconfig/base-node-bare.json' : undefined)
+          assert.equal(config.extends, typescript === '@voxpelli/tsconfig' ? '@voxpelli/tsconfig/node26.json' : undefined)
           assert.deepEqual(config.include, ['src'])
           assert.equal(config.compilerOptions.strict, true)
           assert.equal(config.compilerOptions.noEmit, true)

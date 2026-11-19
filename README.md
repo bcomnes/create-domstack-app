@@ -52,7 +52,7 @@ An existing directory must be empty.
 
 Choose `--typescript none` for JavaScript without a generated `tsconfig.json` or TypeScript checks.
 Choose `--typescript vanilla` for the standalone DOMStack TypeScript configuration, with no shared-config dependency.
-Choose `--typescript @voxpelli/tsconfig` to extend `@voxpelli/tsconfig/base-node-bare.json` and inherit its additional strict checks, while retaining DOMStack's browser types, bundler resolution, JSX settings, and no-emit workflow.
+Choose `--typescript @voxpelli/tsconfig` to extend `@voxpelli/tsconfig/node26.json` and inherit its additional strict checks, while retaining DOMStack's browser types, bundler resolution, JSX settings, and no-emit workflow.
 The shared config is added as a development dependency only when selected.
 
 ```sh
@@ -60,8 +60,7 @@ npm create @domstack/app@latest my-site -- --yes --typescript @voxpelli/tsconfig
 ```
 
 The programmatic API accepts the same `typescript` choices.
-The previous creator `--language js|ts` option is replaced by `--typescript none|vanilla`; the selected source language is derived automatically.
-DOMStack's own eject command still uses `--language ts|js`, as shown in generated manual-setup instructions.
+
 
 ## Working on your site
 

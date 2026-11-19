@@ -331,7 +331,7 @@ npm test
 \`\`\`
 
 Runs ESLint, Node tests${language === 'ts' ? ', and TypeScript checks' : ''}.
-Add individual checks as \`test:*\` scripts to include them in \`npm test\`.${features.typescript === '@voxpelli/tsconfig' ? '\n\nTypeScript extends `@voxpelli/tsconfig/base-node-bare.json`, with DOMStack-specific browser, bundler, and no-emit settings in `tsconfig.json`.' : ''}
+Add individual checks as \`test:*\` scripts to include them in \`npm test\`.${features.typescript === '@voxpelli/tsconfig' ? '\n\nTypeScript extends `@voxpelli/tsconfig/node26.json`, with DOMStack-specific browser, bundler, and no-emit settings in `tsconfig.json`.' : ''}
 
 ## Production preview
 

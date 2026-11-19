@@ -61,7 +61,7 @@ ${language === 'js' && framework !== 'none' ? "    // Track component references
       devDependencies['@voxpelli/tsconfig'] = dependencyVersion('@voxpelli/tsconfig')
     }
     files['tsconfig.json'] = `${JSON.stringify({
-      ...(typescript === '@voxpelli/tsconfig' ? { extends: '@voxpelli/tsconfig/base-node-bare.json' } : {}),
+      ...(typescript === '@voxpelli/tsconfig' ? { extends: '@voxpelli/tsconfig/node26.json' } : {}),
       compilerOptions: {
         target: 'ES2024',
         module: 'ESNext',
