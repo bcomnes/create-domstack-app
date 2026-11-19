@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 import { readFileSync } from 'node:fs'
+import { styleText } from 'node:util'
+import { domstackBanner } from '@domstack/static/lib/cli/banner.js'
 import { chooseFeatures } from './prompts.ts'
 import {
   createApp,
@@ -17,7 +19,7 @@ Usage:
 Options:
   --language ts|js              Source language (default: ts)
   --framework none|preact|react  Browser JSX runtime (default: none)
-  --tailwind                   Enable Tailwind CSS (default: disabled)
+  --css mine|tailwind|none      CSS integration (default: mine)
   --deploy none|github-pages|neocities|wix|cloudflare|vercel|netlify  Deployment workflow (default: none)
   -y, --yes                    Skip prompts and use defaults
   --no-install  Create the project without installing dependencies
@@ -29,10 +31,10 @@ try {
   const options = parseArguments(process.argv.slice(2))
 
   if (options.help) {
-    console.log(usage)
+    console.log(`${styleText('cyan', domstackBanner)}\n\n${usage}`)
   } else if (options.version) {
     const packageJson = JSON.parse(
-      readFileSync(new URL('./package.json', import.meta.url), 'utf8')
+      readFileSync(new URL('../package.json', import.meta.url), 'utf8')
     )
     console.log(packageJson.version)
   } else {
@@ -51,8 +53,7 @@ try {
     console.log(`Change into ${result.directory} first.`)
     if (!result.installed) {
       console.log(`Run ${packageManager} install to install dependencies.`)
-      console.log(`Then run the local domstack --eject --language ${features.language} --yes command to eject the customizable defaults.`)
-      if (features.tailwind) console.log('After manual eject, restore src/globals/global.css as described in README.md for Tailwind.')
+      console.log(`Then run the local domstack eject --language ${features.language} --framework ${features.framework} --css ${features.css} --yes command to eject the customizable defaults.`)
       console.log(`Run ${packageManager} install again to install the added dependencies.`)
     }
     console.log(`Run ${packageManagerRunCommand(packageManager)} to get started.`)

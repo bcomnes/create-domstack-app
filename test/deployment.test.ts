@@ -3,22 +3,22 @@ import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { createApp, parseArguments } from './index.ts'
-import { projectDeployment } from './deployment.ts'
-import type { Deployment } from './deployment.ts'
-import type { Language } from './template.ts'
-import { dependencyVersion } from './dependencies.ts'
+import { createApp, parseArguments } from '../src/index.ts'
+import { projectDeployment } from '../src/deployment.ts'
+import type { Deployment } from '../src/deployment.ts'
+import type { Language } from '../src/template.ts'
+import { dependencyVersion } from '../src/dependencies.ts'
 
 const deployments: Deployment[] = ['none', 'github-pages', 'neocities', 'wix', 'cloudflare', 'vercel', 'netlify']
 const languages: Language[] = ['ts', 'js']
 
 test('parses deployment and feature flags, rejecting missing and invalid values', () => {
   for (const deploy of deployments) {
-    const options = parseArguments(['site', '--deploy', deploy, '--language', 'js', '--framework', 'preact', '--tailwind', '--yes'])
+    const options = parseArguments(['site', '--deploy', deploy, '--language', 'js', '--framework', 'preact', '--css', 'tailwind', '--yes'])
     assert.equal(options.deploy, deploy)
     assert.equal(options.language, 'js')
     assert.equal(options.framework, 'preact')
-    assert.equal(options.tailwind, true)
+    assert.equal(options.css, 'tailwind')
     assert.equal(options.yes, true)
     assert.equal(options.targetDirectory, 'site')
   }
@@ -27,8 +27,7 @@ test('parses deployment and feature flags, rejecting missing and invalid values'
     assert.throws(() => parseArguments([flag, 'invalid']), /must be/)
     assert.throws(() => parseArguments([flag, '--yes']), /must be/)
   }
-  assert.equal(parseArguments(['--tailwind']).tailwind, true)
-  assert.equal(parseArguments(['--yes']).tailwind, undefined)
+  assert.equal(parseArguments(['--yes']).css, undefined)
   assert.throws(() => parseArguments(['--no-tailwind']), /Unknown option/)
 })
 
@@ -38,7 +37,7 @@ for (const language of languages) {
       const parent = mkdtempSync(join(tmpdir(), 'domstack-deploy-'))
       t.after(() => rmSync(parent, { recursive: true, force: true }))
       const directory = join(parent, 'site')
-      await createApp({ targetDirectory: directory, language, deploy, install: false, framework: 'preact', tailwind: true })
+      await createApp({ targetDirectory: directory, language, deploy, install: false, framework: 'preact', css: 'tailwind' })
       const result = projectDeployment(deploy, language, 'site')
       for (const [path, content] of Object.entries(result.files)) {
         assert.equal(readFileSync(join(directory, path), 'utf8'), content)
@@ -50,8 +49,8 @@ for (const language of languages) {
       assert.equal(manifest.devDependencies.vercel, deploy === 'vercel' ? dependencyVersion('vercel') : undefined)
       assert.equal(manifest.devDependencies['netlify-cli'], deploy === 'netlify' ? dependencyVersion('netlify-cli') : undefined)
       assert.equal(existsSync(join(directory, 'AGENTS.md')), deploy === 'wix')
-      assert.ok(readme.includes(`--eject --language ${language} --yes`))
-      assert.match(readme, /after manual eject, restore/)
+      assert.ok(readme.includes(`eject --language ${language} --framework preact --css tailwind --yes`))
+      assert.doesNotMatch(readme, /restore/)
       assert.match(readFileSync(join(directory, 'src/interactive/page.html'), 'utf8'), /href="\.\.\/"/)
       if (deploy === 'none') {
         assert.deepEqual(result, { files: {}, readme: '' })

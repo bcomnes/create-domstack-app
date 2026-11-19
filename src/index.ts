@@ -7,10 +7,9 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { basename, dirname, resolve } from 'node:path'
-import { configureDefaults } from './defaults.ts'
 import { dependencyVersion } from './dependencies.ts'
 import { projectDeployment } from './deployment.ts'
-import { projectFeatures } from './template.ts'
+import { projectFeatures, resolveCss } from './template.ts'
 import type { Features } from './template.ts'
 
 export const defaultTargetDirectory = 'domstack-app'
@@ -77,7 +76,7 @@ export function parseArguments (arguments_: string[]): CliOptions {
   const features: Partial<Features> = {}
 
   for (const [index, argument] of arguments_.entries()) {
-    if (['--language', '--framework', '--deploy'].includes(arguments_[index - 1] ?? '')) continue
+    if (['--language', '--framework', '--css', '--deploy'].includes(arguments_[index - 1] ?? '')) continue
     if (argument === '--deploy') {
       const value = arguments_[index + 1]
       if (value !== 'none' && value !== 'github-pages' && value !== 'neocities' && value !== 'wix' && value !== 'cloudflare' && value !== 'vercel' && value !== 'netlify') throw new Error('--deploy must be none, github-pages, neocities, wix, cloudflare, vercel, or netlify.')
@@ -96,8 +95,10 @@ export function parseArguments (arguments_: string[]): CliOptions {
       features.framework = value
       continue
     }
-    if (argument === '--tailwind') {
-      features.tailwind = true
+    if (argument === '--css') {
+      const value = arguments_[index + 1]
+      if (value !== 'mine' && value !== 'tailwind' && value !== 'none') throw new Error('--css must be mine, tailwind, or none.')
+      features.css = value
       continue
     }
     if (argument === '--yes' || argument === '-y') {
@@ -155,19 +156,20 @@ export async function createApp (
   const directory = resolve(targetDirectory)
   const packageName = packageNameFromDirectory(directory)
 
-  assertEmptyDirectory(directory)
-  mkdirSync(directory, { recursive: true })
   const packageManager = options.packageManager ?? detectPackageManager()
   const install = options.install ?? true
   const eject = options.eject ?? true
   const features: Features = {
     language: options.language ?? 'ts',
     framework: options.framework ?? 'none',
-    tailwind: options.tailwind ?? false,
+    css: resolveCss(options),
     deploy: options.deploy ?? 'none',
   }
   const template = projectFeatures(features)
   const deployment = projectDeployment(features.deploy, features.language, packageName)
+
+  assertEmptyDirectory(directory)
+  mkdirSync(directory, { recursive: true })
 
   const packageJson = {
     name: packageName,
@@ -205,15 +207,8 @@ export async function createApp (
   if (install) {
     installDependencies(directory, packageManager)
     if (eject) {
-      await ejectDefaults(directory, packageManager, features.language)
-      configureDefaults(directory, features.language, features.tailwind)
+      await ejectDefaults(directory, packageManager, features)
       installDependencies(directory, packageManager)
-      if (features.language === 'js') {
-        execFileSync(process.execPath, [resolve(directory, 'node_modules/eslint/bin/eslint.js'), 'src/layouts/root.layout.js', '--fix'], {
-          cwd: directory,
-          stdio: 'inherit',
-        })
-      }
     }
   }
 
@@ -280,9 +275,9 @@ function installDependencies (
 async function ejectDefaults (
   directory: string,
   packageManager: PackageManager,
-  language: Features['language']
+  features: Features
 ): Promise<void> {
-  const flags = ['--eject', '--language', language, '--yes']
+  const flags = ['eject', '--language', features.language, '--framework', features.framework, '--css', features.css, '--yes']
   const argumentsByPackageManager = {
     npm: ['exec', '--', 'domstack', ...flags],
     pnpm: ['exec', 'domstack', ...flags],
@@ -349,8 +344,8 @@ npm run build
 
 The generated site is written to \`public/\`.
 With default setup, \`src/layouts/\` and \`src/globals/\` contain customizable DOMStack defaults.
-If setup used \`--no-install\`, run \`npm install\`, \`npx domstack --eject --language ${features.language} --yes\`, and \`npm install\` to eject them and install their dependencies.
-${features.tailwind ? 'Eject replaces `src/globals/global.css`; after manual eject, restore its contents to `@import "tailwindcss" source("../");` before building.\n' : ''}Only eject into a fresh project: eject overwrites the default layout, stylesheet, and client files.
-This setup requires a DOMStack release supporting \`--eject --language ts|js --yes\`.
+If setup used \`--no-install\`, run \`npm install\`, \`npx domstack eject --language ${features.language} --framework ${features.framework} --css ${features.css} --yes\`, and \`npm install\` to eject them and install their dependencies.
+Eject checks existing integration settings before writing; run it before customizing the generated defaults.
+This setup requires a DOMStack release supporting \`domstack eject --language ts|js --framework none|preact|react --css mine|tailwind|none --yes\`.
 `
 }

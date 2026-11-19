@@ -1,5 +1,17 @@
 # Contributing
 
+## Project layout
+
+- `src/` contains the CLI and project-generation implementation.
+- `test/` contains the Node.js tests, which run directly against the TypeScript source.
+- `scripts/` contains the packed integration smoke runner.
+- `dist/` contains generated JavaScript, declarations, and declaration maps; it is ignored by Git.
+
+Run `npm test` for lint, typechecking, and tests.
+Run `npm run build` to compile `src/` into `dist/`, or `npm run clean` to remove the generated output.
+`npm pack` builds automatically before packaging; source files are included so declaration maps can resolve, while tests and development scripts are excluded.
+For packed integration checks against a local DOMStack checkout, run `npm run smoke:local -- /path/to/domstack`.
+
 ## Releasing
 
 Changelog and releasing are automated with npm scripts and actions. To create a release:

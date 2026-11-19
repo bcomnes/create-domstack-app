@@ -3,7 +3,7 @@
 [![npm version](https://img.shields.io/npm/v/@domstack/create-app.svg)](https://www.npmjs.com/package/@domstack/create-app)
 [![Actions Status](https://github.com/bcomnes/create-domstack-app/workflows/tests/badge.svg)](https://github.com/bcomnes/create-domstack-app/actions)
 
-Create a new [DOMStack](https://domstack.net) site with TypeScript or JavaScript, optional JSX and Tailwind, and a deployment workflow for your host.
+Create a new [DOMStack](https://domstack.net) site with TypeScript or JavaScript, optional JSX, mine.css or Tailwind CSS, and a deployment workflow for your host.
 
 ## Get started
 
@@ -14,7 +14,7 @@ npm start
 ```
 
 Pick your options when prompted.
-The defaults are TypeScript, no JSX, no Tailwind, and no deployment setup.
+The defaults are TypeScript, no JSX, mine.css, and no deployment setup.
 Dependencies are installed for you.
 
 You can also use pnpm:
@@ -31,14 +31,14 @@ Wix projects require Node.js 24.22.1+.
 Pass flags to skip individual questions, or use `--yes` to accept the defaults for anything you haven't specified.
 
 ```sh
-npm create @domstack/app@latest my-site -- --yes --framework preact --tailwind --deploy cloudflare
+npm create @domstack/app@latest my-site -- --yes --framework preact --css tailwind --deploy cloudflare
 ```
 
 | Option | Choices | Default |
 | --- | --- | --- |
 | `--language` | `ts`, `js` | `ts` |
 | `--framework` | `none`, `preact`, `react` | `none` |
-| `--tailwind` | Enable Tailwind CSS | Off |
+| `--css` | `mine`, `tailwind`, `none` | `mine` |
 | `--deploy` | `none`, `github-pages`, `neocities`, `wix`, `cloudflare`, `vercel`, `netlify` | `none` |
 | `-y`, `--yes` | Skip remaining questions | |
 | `--no-install` | Skip dependency installation and default file setup | |
@@ -125,19 +125,16 @@ Then, inside the new project, run:
 
 ```sh
 npm install
-npx domstack --eject --language ts --yes
+npx domstack eject --language ts --framework none --css mine --yes
 npm install
 ```
 
-Use `--language js` for a JavaScript project.
-The eject command writes the default layout, stylesheet, and client script, so run it before customizing those files.
-If you selected Tailwind, restore `src/globals/global.css` afterward to:
-
-```css
-@import "tailwindcss" source("../");
-```
-
-Normal setup handles this for you.
+Match the eject arguments to your project: `--language ts|js`, `--framework none|preact|react`, and `--css mine|tailwind|none`.
+The creator already writes the shared integration settings and dependencies, including with `--no-install`.
+Eject adds the default layout and client script and accepts identical integration settings; run it before customizing the generated defaults.
+No stylesheet restoration is needed for Tailwind.
+Normal setup handles eject for you.
+This requires a DOMStack release providing the shared feature helper and the `domstack eject` feature flags.
 
 ## License
 

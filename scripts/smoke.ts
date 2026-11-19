@@ -2,12 +2,12 @@ import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { join, resolve, sep } from 'node:path'
 
 const upstreamArgument = process.argv[2]
 if (!upstreamArgument) throw new Error('Usage: npm run smoke:registry or npm run smoke:local -- /path/to/domstack (with its development dependencies installed)')
 const registry = upstreamArgument === '--registry'
-const root = import.meta.dirname
+const root = resolve(import.meta.dirname, '..')
 const npm = process.env['npm_execpath']
 if (!npm) throw new Error('Run this smoke check with npm run smoke:local or npm run smoke:registry.')
 const temporary = mkdtempSync(join(tmpdir(), 'domstack-packed-smoke-'))
@@ -31,7 +31,10 @@ try {
     const copy = join(temporary, 'upstream')
     mkdirSync(copy)
     for (const path of ['bin.js', 'index.js', 'types.ts', 'types', 'lib', 'package.json', 'tsconfig.json', 'declaration.tsconfig.json']) {
-      cpSync(join(upstream, path), join(copy, path), { recursive: true })
+      cpSync(join(upstream, path), join(copy, path), {
+        recursive: true,
+        filter: source => !/\.d\.ts(?:\.map)?$/.test(source) || source.startsWith(join(upstream, 'types') + sep) || source.endsWith('-types.d.ts'),
+      })
     }
     symlinkSync(join(upstream, 'node_modules'), join(copy, 'node_modules'), 'dir')
     run(['run', 'build:declaration'], copy)
@@ -42,25 +45,32 @@ try {
   const consumer = join(temporary, 'consumer')
   mkdirSync(consumer)
   writeFileSync(join(consumer, 'package.json'), '{"private":true,"type":"module"}\n')
-  run(['install', '--ignore-scripts', '--no-audit', '--no-fund', generatorTarball], consumer)
+  run(['install', '--ignore-scripts', '--no-audit', '--no-fund', generatorTarball, ...(upstreamTarball ? [upstreamTarball] : [])], consumer)
   const generator = join(consumer, 'node_modules/@domstack/create-app')
   const manifest = JSON.parse(readFileSync(join(generator, 'package.json'), 'utf8'))
-  const range = manifest.devDependencies['@domstack/static']
+  const range = manifest.dependencies['@domstack/static']
   assert.ok(!range.startsWith('file:'))
-  for (const path of ['index.js', 'index.d.ts', 'template.js', 'template.d.ts', 'deployment.js', 'deployment.d.ts', 'wix-agents.js', 'wix-agents.d.ts', 'defaults.js', 'dependencies.js', 'prompts.js']) {
-    assert.ok(existsSync(join(generator, path)), `missing packed ${path}`)
+  for (const path of ['bin.js', 'index.js', 'index.d.ts', 'template.js', 'template.d.ts', 'deployment.js', 'deployment.d.ts', 'wix-agents.js', 'wix-agents.d.ts', 'dependencies.js', 'prompts.js']) {
+    assert.ok(existsSync(join(generator, 'dist', path)), `missing packed dist/${path}`)
   }
+  assert.ok(existsSync(join(generator, 'src/index.ts')), 'missing declaration-map source')
+  assert.ok(!existsSync(join(generator, 'test')), 'tests should not be published')
+  assert.ok(!existsSync(join(generator, 'scripts')), 'development scripts should not be published')
 
   writeFileSync(join(consumer, 'api.ts'), `import { createApp } from '@domstack/create-app'
 import type { CreateAppResult } from '@domstack/create-app'
 
 const result: Promise<CreateAppResult> = createApp({
-  targetDirectory: 'site', language: 'ts', framework: 'preact', tailwind: true,
+  targetDirectory: 'site', language: 'ts', framework: 'preact', css: 'tailwind',
   deploy: 'github-pages', install: false,
 })
 void result
 `)
-  execFileSync(process.execPath, [join(root, 'node_modules/typescript/bin/tsc'), '--noEmit', '--strict', '--module', 'nodenext', '--target', 'es2024', 'api.ts'], {
+  const compilerPackage = join(root, 'node_modules/typescript')
+  const compilerManifest = JSON.parse(readFileSync(join(compilerPackage, 'package.json'), 'utf8'))
+  const compilerBin = compilerManifest.bin.tsc ?? compilerManifest.bin.tsc6
+  assert.ok(compilerBin, 'TypeScript must provide a tsc or tsc6 executable')
+  execFileSync(process.execPath, [join(compilerPackage, compilerBin), '--noEmit', '--strict', '--module', 'nodenext', '--target', 'es2024', 'api.ts'], {
     cwd: consumer, stdio: 'inherit', timeout: 120_000,
   })
 
@@ -83,26 +93,28 @@ process.exit(result.status ?? 1)
     env['PATH'] = `${bin}:${process.env['PATH'] ?? ''}`
   }
   const cases = [
-    { language: 'ts', framework: 'none', tailwind: false, deploy: 'none' },
-    { language: 'js', framework: 'none', tailwind: false, deploy: 'none' },
-    { language: 'ts', framework: 'preact', tailwind: true, deploy: 'github-pages' },
-    { language: 'js', framework: 'react', tailwind: true, deploy: 'github-pages' },
-    { language: 'ts', framework: 'react', tailwind: true, deploy: 'neocities' },
-    { language: 'js', framework: 'preact', tailwind: true, deploy: 'neocities' },
-    { language: 'ts', framework: 'none', tailwind: false, deploy: 'wix' },
-    { language: 'js', framework: 'none', tailwind: false, deploy: 'wix' },
-    { language: 'ts', framework: 'none', tailwind: false, deploy: 'cloudflare' },
-    { language: 'js', framework: 'none', tailwind: false, deploy: 'cloudflare' },
-    { language: 'ts', framework: 'none', tailwind: false, deploy: 'vercel' },
-    { language: 'js', framework: 'none', tailwind: false, deploy: 'vercel' },
-    { language: 'ts', framework: 'none', tailwind: false, deploy: 'netlify' },
-    { language: 'js', framework: 'none', tailwind: false, deploy: 'netlify' },
+    { language: 'ts', framework: 'preact', css: 'none', deploy: 'none' },
+    { language: 'js', framework: 'react', css: 'none', deploy: 'none' },
+    { language: 'ts', framework: 'none', css: 'mine', deploy: 'none' },
+    { language: 'js', framework: 'none', css: 'mine', deploy: 'none' },
+    { language: 'ts', framework: 'preact', css: 'tailwind', deploy: 'github-pages' },
+    { language: 'js', framework: 'react', css: 'tailwind', deploy: 'github-pages' },
+    { language: 'ts', framework: 'react', css: 'tailwind', deploy: 'neocities' },
+    { language: 'js', framework: 'preact', css: 'tailwind', deploy: 'neocities' },
+    { language: 'ts', framework: 'none', css: 'mine', deploy: 'wix' },
+    { language: 'js', framework: 'none', css: 'mine', deploy: 'wix' },
+    { language: 'ts', framework: 'none', css: 'mine', deploy: 'cloudflare' },
+    { language: 'js', framework: 'none', css: 'mine', deploy: 'cloudflare' },
+    { language: 'ts', framework: 'none', css: 'mine', deploy: 'vercel' },
+    { language: 'js', framework: 'none', css: 'mine', deploy: 'vercel' },
+    { language: 'ts', framework: 'none', css: 'mine', deploy: 'netlify' },
+    { language: 'js', framework: 'none', css: 'mine', deploy: 'netlify' },
   ]
   for (const features of cases) {
-    const { language, framework, tailwind, deploy } = features
-    const directory = join(temporary, `${language}-${framework}-${deploy}`)
+    const { language, framework, css, deploy } = features
+    const directory = join(temporary, `${language}-${framework}-${css}-${deploy}`)
     console.log(`\nSmoke: ${JSON.stringify(features)}`)
-    execFileSync(process.execPath, [join(generator, 'bin.js'), directory, '--yes', '--language', language, '--framework', framework, ...(tailwind ? ['--tailwind'] : []), '--deploy', deploy], {
+    execFileSync(process.execPath, [join(generator, manifest.bin['create-domstack-app']), directory, '--yes', '--language', language, '--framework', framework, '--css', css, '--deploy', deploy], {
       cwd: consumer, env, stdio: 'inherit', timeout: 120_000,
     })
     const generatedManifest = JSON.parse(readFileSync(join(directory, 'package.json'), 'utf8'))
@@ -117,7 +129,7 @@ process.exit(result.status ?? 1)
     assert.ok(layout.includes('defaultRootLayout'))
     assert.ok(existsSync(join(directory, `src/globals/global.client.${language}`)))
     assert.ok(!existsSync(join(directory, `src/layouts/root.layout.${language === 'ts' ? 'js' : 'ts'}`)))
-    if (tailwind) assert.equal(readFileSync(join(directory, 'src/globals/global.css'), 'utf8'), '@import "tailwindcss" source("../");\n')
+    if (css === 'tailwind') assert.equal(readFileSync(join(directory, 'src/globals/global.css'), 'utf8'), '@import "tailwindcss" source("../");\n')
     run(['run', 'build'], directory)
     assert.match(readFileSync(join(directory, 'public/index.html'), 'utf8'), /Welcome to DOMStack/)
     if (framework !== 'none') {
@@ -125,7 +137,7 @@ process.exit(result.status ?? 1)
       assert.match(html, /counter-root/)
       const stylesheet = /href="(\/[^" ]+\.css)"/.exec(html)?.[1]
       assert.ok(stylesheet)
-      assert.match(readFileSync(join(directory, 'public', stylesheet), 'utf8'), /\.bg-blue-600/)
+      if (css === 'tailwind') assert.match(readFileSync(join(directory, 'public', stylesheet), 'utf8'), /\.bg-blue-600/)
     }
     run(['test'], directory)
     if (deploy === 'github-pages') {
@@ -137,7 +149,7 @@ process.exit(result.status ?? 1)
       assert.doesNotMatch(html, /\/example-repo\/\//)
     }
   }
-  console.log(`\nPacked generator and ${registry ? 'registry' : 'local upstream'} integration passed (14 projects).`)
+  console.log(`\nPacked generator and ${registry ? 'registry' : 'local upstream'} integration passed (${cases.length} projects).`)
 } finally {
   run(['run', 'clean'], root)
   rmSync(temporary, { recursive: true, force: true })
