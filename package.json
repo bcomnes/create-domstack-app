@@ -10,7 +10,7 @@
     "@domstack/static": "^12.1.0"
   },
   "devDependencies": {
-    "@voxpelli/tsconfig": "^16.1.0",
+    "@voxpelli/tsconfig": "^17.0.0",
     "@types/node": "^26.0.1",
     "eslint": "^9.39.5",
     "neostandard": "^0.14.1",
