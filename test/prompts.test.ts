@@ -25,7 +25,7 @@ const defaults = { language: 'ts', framework: 'none', css: 'mine', deploy: 'none
 test('non-interactive input uses defaults and preserves explicit choices', async (t) => {
   t.after(tty(false))
   assert.deepEqual(await chooseFeatures(parseArguments([])), defaults)
-  assert.deepEqual(await chooseFeatures(parseArguments(['--language', 'js', '--framework', 'react', '--tailwind', '--deploy', 'neocities'])), {
+  assert.deepEqual(await chooseFeatures(parseArguments(['--language', 'js', '--framework', 'react', '--css', 'tailwind', '--deploy', 'neocities'])), {
     language: 'js', framework: 'react', css: 'tailwind', deploy: 'neocities',
   })
 })
@@ -63,20 +63,20 @@ test('interactive defaults, numbered choices, retry, and explicit-flag skipping'
   assert.match(questions[3] ?? '', /Deployment/)
   answers = ['invalid', '3']
   questions.length = 0
-  assert.deepEqual(await chooseFeatures({ ...parseArguments(['--language', 'js', '--framework', 'preact']), tailwind: false }), {
+  assert.deepEqual(await chooseFeatures(parseArguments(['--language', 'js', '--framework', 'preact', '--css', 'mine'])), {
     language: 'js', framework: 'preact', css: 'mine', deploy: 'neocities',
   })
   assert.equal(questions.length, 2)
   assert.ok(questions.every(question => question.includes('\nDeployment\n')))
   assert.equal(closed, 2)
   answers = ['4']
-  assert.equal((await chooseFeatures({ ...parseArguments(['--language', 'ts', '--framework', 'none']), tailwind: false })).deploy, 'wix')
+  assert.equal((await chooseFeatures(parseArguments(['--language', 'ts', '--framework', 'none', '--css', 'mine']))).deploy, 'wix')
   answers = ['5']
-  assert.equal((await chooseFeatures({ ...parseArguments(['--language', 'ts', '--framework', 'none']), tailwind: false })).deploy, 'cloudflare')
+  assert.equal((await chooseFeatures(parseArguments(['--language', 'ts', '--framework', 'none', '--css', 'mine']))).deploy, 'cloudflare')
   answers = ['6']
-  assert.equal((await chooseFeatures({ ...parseArguments(['--language', 'ts', '--framework', 'none']), tailwind: false })).deploy, 'vercel')
+  assert.equal((await chooseFeatures(parseArguments(['--language', 'ts', '--framework', 'none', '--css', 'mine']))).deploy, 'vercel')
   answers = ['7']
-  assert.equal((await chooseFeatures({ ...parseArguments(['--language', 'ts', '--framework', 'none']), tailwind: false })).deploy, 'netlify')
+  assert.equal((await chooseFeatures(parseArguments(['--language', 'ts', '--framework', 'none', '--css', 'mine']))).deploy, 'netlify')
 })
 
 test('CSS prompt accepts names and numbers, defaults to mine, and retries invalid input', async (t) => {

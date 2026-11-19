@@ -47,6 +47,8 @@ test('creates a DOMStack project without installing dependencies', async (t) => 
   assert.equal(packageJson.devDependencies['@domstack/static'], domstackVersion)
   assert.equal(packageJson.scripts.start, 'domstack --watch')
   assert.equal(packageJson.scripts.preview, 'domstack --serve')
+  assert.equal(packageJson.dependencies['mine.css'], ejectFeatures({ language: 'ts', framework: 'none', css: 'mine', module: true }).dependencies['mine.css'])
+  assert.match(readFileSync(join(targetDirectory, 'README.md'), 'utf8'), /--css mine --yes/)
   assert.equal(packageJson.scripts.dev, undefined)
   assert.equal(packageJson.scripts['production-preview'], undefined)
   assert.match(
@@ -128,30 +130,36 @@ test('formats development commands for each package manager', () => {
   assert.equal(packageManagerRunCommand('bun'), 'bun run start')
 })
 
-test('parses CSS choices and validates the legacy alias in either argument order', () => {
+test('parses CSS choices and rejects missing or invalid values', () => {
   for (const css of ['mine', 'tailwind', 'none']) {
     assert.equal(parseArguments(['--css', css]).css, css)
   }
   for (const value of [undefined, 'invalid', '--yes']) {
     assert.throws(() => parseArguments(['--css', ...(value ? [value] : [])]), /--css must be/)
   }
-  for (const css of ['mine', 'none']) {
-    assert.throws(() => parseArguments(['--css', css, '--tailwind']), /conflicts/)
-    assert.throws(() => parseArguments(['--tailwind', '--css', css]), /conflicts/)
-  }
-  assert.equal(parseArguments(['--tailwind', '--css', 'tailwind']).css, 'tailwind')
-  assert.equal(parseArguments(['--css', 'tailwind', '--tailwind']).tailwind, true)
+  assert.equal(parseArguments([]).css, undefined)
 })
 
-test('rejects conflicting programmatic CSS choices before creating the project', async (t) => {
+test('rejects the removed --tailwind option', () => {
+  for (const args of [
+    ['--tailwind'],
+    ['--tailwind', '--css', 'tailwind'],
+    ['--css', 'tailwind', '--tailwind'],
+  ]) {
+    assert.throws(() => parseArguments(args), /Unknown option: --tailwind/)
+  }
+})
+
+test('rejects invalid programmatic CSS before creating the project', async (t) => {
   const parent = temporaryDirectory()
   t.after(() => rmSync(parent, { recursive: true, force: true }))
   const targetDirectory = join(parent, 'site')
-  for (const css of ['mine', 'none'] as const) {
-    await assert.rejects(createApp({ targetDirectory, install: false, css, tailwind: true }), /conflicts/)
-    assert.equal(existsSync(targetDirectory), false)
-  }
-  await assert.rejects(createApp({ targetDirectory, install: false, css: 'tailwind', tailwind: false }), /conflicts/)
+  await assert.rejects(createApp({
+    targetDirectory,
+    install: false,
+    // @ts-expect-error Validate untyped consumers before any files are written.
+    css: 'invalid',
+  }), /--css must be mine, tailwind, or none\./)
   assert.equal(existsSync(targetDirectory), false)
 })
 

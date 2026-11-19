@@ -20,7 +20,6 @@ Options:
   --language ts|js              Source language (default: ts)
   --framework none|preact|react  Browser JSX runtime (default: none)
   --css mine|tailwind|none      CSS integration (default: mine)
-  --tailwind                   Alias for --css tailwind
   --deploy none|github-pages|neocities|wix|cloudflare|vercel|netlify  Deployment workflow (default: none)
   -y, --yes                    Skip prompts and use defaults
   --no-install  Create the project without installing dependencies

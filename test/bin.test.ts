@@ -21,7 +21,7 @@ test('help starts with the shared DOMStack banner', () => {
   assert.equal(help.split(domstackBanner).length, 2)
   assert.match(help, /Usage:/)
   assert.match(help, /--css mine\|tailwind\|none/)
-  assert.match(help, /Alias for --css tailwind/)
+  assert.doesNotMatch(help, /--tailwind/)
 })
 
 test('version output remains machine-readable without a banner', () => {
@@ -32,7 +32,7 @@ test('version output remains machine-readable without a banner', () => {
 test('no-install output includes the exact eject choices without CSS restoration', (t) => {
   const directory = mkdtempSync(join(tmpdir(), 'domstack-bin-'))
   t.after(() => rmSync(directory, { recursive: true, force: true }))
-  const output = run(join(directory, 'site'), '--yes', '--no-install', '--language', 'js', '--framework', 'react', '--tailwind')
+  const output = run(join(directory, 'site'), '--yes', '--no-install', '--language', 'js', '--framework', 'react', '--css', 'tailwind')
   assert.match(output, /domstack eject --language js --framework react --css tailwind --yes/)
   assert.doesNotMatch(output, /restore/)
 })

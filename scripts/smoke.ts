@@ -65,7 +65,6 @@ const result: Promise<CreateAppResult> = createApp({
   deploy: 'github-pages', install: false,
 })
 void result
-void createApp({ targetDirectory: 'legacy-site', tailwind: true, install: false })
 `)
   const compilerPackage = join(root, 'node_modules/typescript')
   const compilerManifest = JSON.parse(readFileSync(join(compilerPackage, 'package.json'), 'utf8'))
@@ -115,7 +114,7 @@ process.exit(result.status ?? 1)
     const { language, framework, css, deploy } = features
     const directory = join(temporary, `${language}-${framework}-${css}-${deploy}`)
     console.log(`\nSmoke: ${JSON.stringify(features)}`)
-    execFileSync(process.execPath, [join(generator, manifest.bin['create-domstack-app']), directory, '--yes', '--language', language, '--framework', framework, ...(language === 'js' && framework === 'react' && css === 'tailwind' ? ['--tailwind'] : ['--css', css]), '--deploy', deploy], {
+    execFileSync(process.execPath, [join(generator, manifest.bin['create-domstack-app']), directory, '--yes', '--language', language, '--framework', framework, '--css', css, '--deploy', deploy], {
       cwd: consumer, env, stdio: 'inherit', timeout: 120_000,
     })
     const generatedManifest = JSON.parse(readFileSync(join(directory, 'package.json'), 'utf8'))

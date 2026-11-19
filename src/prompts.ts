@@ -6,7 +6,7 @@ import { resolveCss } from './template.ts'
 import type { Features } from './template.ts'
 
 export async function chooseFeatures (options: CliOptions): Promise<Features> {
-  const cssChoice = options.css !== undefined || options.tailwind !== undefined ? resolveCss(options) : undefined
+  const cssChoice = options.css !== undefined ? resolveCss(options) : undefined
   const defaults: Features = { language: 'ts', framework: 'none', css: 'mine', deploy: 'none' }
   if (options.yes || !process.stdin.isTTY || !process.stdout.isTTY) {
     return {

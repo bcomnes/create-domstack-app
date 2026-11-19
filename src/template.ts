@@ -10,7 +10,6 @@ export interface Features {
   language: Language
   framework: Framework
   css: Css
-  tailwind?: boolean
   deploy: Deployment
 }
 
@@ -141,13 +140,9 @@ if (container) {
   return { files, dependencies, devDependencies, scripts }
 }
 
-export function resolveCss (options: { css?: Css, tailwind?: boolean }): Css {
-  const { css, tailwind } = options
+export function resolveCss ({ css }: { css?: Css }): Css {
   if (css !== undefined && !['mine', 'tailwind', 'none'].includes(css)) {
     throw new Error('--css must be mine, tailwind, or none.')
   }
-  if (css !== undefined && tailwind !== undefined && (css === 'tailwind') !== tailwind) {
-    throw new Error('--tailwind conflicts with the selected --css option.')
-  }
-  return css ?? (tailwind ? 'tailwind' : 'mine')
+  return css ?? 'mine'
 }

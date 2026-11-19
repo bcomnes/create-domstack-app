@@ -14,11 +14,11 @@ const languages: Language[] = ['ts', 'js']
 
 test('parses deployment and feature flags, rejecting missing and invalid values', () => {
   for (const deploy of deployments) {
-    const options = parseArguments(['site', '--deploy', deploy, '--language', 'js', '--framework', 'preact', '--tailwind', '--yes'])
+    const options = parseArguments(['site', '--deploy', deploy, '--language', 'js', '--framework', 'preact', '--css', 'tailwind', '--yes'])
     assert.equal(options.deploy, deploy)
     assert.equal(options.language, 'js')
     assert.equal(options.framework, 'preact')
-    assert.equal(options.tailwind, true)
+    assert.equal(options.css, 'tailwind')
     assert.equal(options.yes, true)
     assert.equal(options.targetDirectory, 'site')
   }
@@ -27,8 +27,7 @@ test('parses deployment and feature flags, rejecting missing and invalid values'
     assert.throws(() => parseArguments([flag, 'invalid']), /must be/)
     assert.throws(() => parseArguments([flag, '--yes']), /must be/)
   }
-  assert.equal(parseArguments(['--tailwind']).tailwind, true)
-  assert.equal(parseArguments(['--yes']).tailwind, undefined)
+  assert.equal(parseArguments(['--yes']).css, undefined)
   assert.throws(() => parseArguments(['--no-tailwind']), /Unknown option/)
 })
 
@@ -38,7 +37,7 @@ for (const language of languages) {
       const parent = mkdtempSync(join(tmpdir(), 'domstack-deploy-'))
       t.after(() => rmSync(parent, { recursive: true, force: true }))
       const directory = join(parent, 'site')
-      await createApp({ targetDirectory: directory, language, deploy, install: false, framework: 'preact', tailwind: true })
+      await createApp({ targetDirectory: directory, language, deploy, install: false, framework: 'preact', css: 'tailwind' })
       const result = projectDeployment(deploy, language, 'site')
       for (const [path, content] of Object.entries(result.files)) {
         assert.equal(readFileSync(join(directory, path), 'utf8'), content)

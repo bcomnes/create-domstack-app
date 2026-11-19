@@ -81,11 +81,18 @@ for (const language of languages) {
   }
 }
 
-test('legacy tailwind API inputs produce the same integration', () => {
-  for (const tailwind of [false, true]) {
-    assert.deepEqual(
-      projectFeatures({ language: 'ts', framework: 'preact', tailwind }),
-      projectFeatures({ language: 'ts', framework: 'preact', css: tailwind ? 'tailwind' : 'mine' })
-    )
-  }
+test('omitted CSS defaults to the mine integration', () => {
+  assert.deepEqual(
+    projectFeatures({ language: 'ts', framework: 'preact' }),
+    projectFeatures({ language: 'ts', framework: 'preact', css: 'mine' })
+  )
+})
+
+test('rejects invalid CSS at runtime', () => {
+  assert.throws(() => projectFeatures({
+    language: 'ts',
+    framework: 'none',
+    // @ts-expect-error Validate untyped consumers at runtime.
+    css: 'invalid',
+  }), /--css must be mine, tailwind, or none\./)
 })

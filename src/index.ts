@@ -101,10 +101,6 @@ export function parseArguments (arguments_: string[]): CliOptions {
       features.css = value
       continue
     }
-    if (argument === '--tailwind') {
-      features.tailwind = true
-      continue
-    }
     if (argument === '--yes' || argument === '-y') {
       yes = true
       continue
@@ -131,8 +127,6 @@ export function parseArguments (arguments_: string[]): CliOptions {
   if (positionalArguments.length > 1) {
     throw new Error('Only one target directory may be specified.')
   }
-
-  resolveCss(features)
 
   return {
     ...features,

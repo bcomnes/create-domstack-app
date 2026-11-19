@@ -39,7 +39,6 @@ npm create @domstack/app@latest my-site -- --yes --framework preact --css tailwi
 | `--language` | `ts`, `js` | `ts` |
 | `--framework` | `none`, `preact`, `react` | `none` |
 | `--css` | `mine`, `tailwind`, `none` | `mine` |
-| `--tailwind` | Alias for `--css tailwind` | |
 | `--deploy` | `none`, `github-pages`, `neocities`, `wix`, `cloudflare`, `vercel`, `netlify` | `none` |
 | `-y`, `--yes` | Skip remaining questions | |
 | `--no-install` | Skip dependency installation and default file setup | |
@@ -48,7 +47,6 @@ npm create @domstack/app@latest my-site -- --yes --framework preact --css tailwi
 
 If you leave out the directory, it uses `domstack-app`.
 An existing directory must be empty.
-`--tailwind` remains supported, but conflicts with `--css mine` or `--css none`.
 
 ## Working on your site
 
