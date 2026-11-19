@@ -7,7 +7,7 @@
     "url": "https://github.com/bcomnes/create-domstack-app/issues"
   },
   "dependencies": {
-    "@domstack/static": "^12.0.0-beta.9"
+    "@domstack/static": "^12.1.0"
   },
   "devDependencies": {
     "@voxpelli/tsconfig": "^16.1.0",
