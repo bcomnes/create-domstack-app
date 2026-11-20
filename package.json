@@ -12,7 +12,7 @@
   "devDependencies": {
     "@voxpelli/tsconfig": "^17.0.0",
     "@types/node": "^26.0.1",
-    "eslint": "^9.39.5",
+    "eslint": "^10.15.0",
     "neostandard": "^0.14.1",
     "npm-run-all2": "^9.0.0",
     "releasearoni": "^0.2.0",
