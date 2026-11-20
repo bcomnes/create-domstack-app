@@ -20,7 +20,7 @@
     "@typescript/native": "npm:typescript@^7.0.2",
     "@wix/cli": "^1.2.14",
     "wrangler": "^4.157.0",
-    "vercel": "^65.17.0",
+    "vercel": "^66.2.0",
     "netlify-cli": "^27.20.0"
   },
   "engines": {
