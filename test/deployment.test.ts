@@ -50,6 +50,15 @@ for (const language of languages) {
       assert.equal(manifest.devDependencies.vercel, deploy === 'vercel' ? dependencyVersion('vercel') : undefined)
       assert.equal(manifest.devDependencies['netlify-cli'], deploy === 'netlify' ? dependencyVersion('netlify-cli') : undefined)
       assert.equal(existsSync(join(directory, 'AGENTS.md')), deploy === 'wix')
+      const skillDirectory = join(directory, '.agents/skills/domstack-wix-headless')
+      assert.equal(existsSync(skillDirectory), deploy === 'wix')
+      if (deploy === 'wix') {
+        for (const path of ['SKILL.md', 'agents/openai.yaml', 'references/form-integration.md', 'references/migration.md']) {
+          assert.equal(readFileSync(join(skillDirectory, path), 'utf8'), readFileSync(new URL(`../skills/domstack-wix-headless/${path}`, import.meta.url), 'utf8'))
+        }
+        assert.ok(readme.includes('.agents/skills/domstack-wix-headless/SKILL.md'))
+        assert.ok(readFileSync(join(directory, 'AGENTS.md'), 'utf8').includes('.agents/skills/domstack-wix-headless/SKILL.md'))
+      }
       assert.ok(readme.includes(`eject --language ${language} --framework preact --css tailwind --yes`))
       assert.doesNotMatch(readme, /restore/)
       assert.match(readFileSync(join(directory, 'src/interactive/page.html'), 'utf8'), /href="\.\.\/"/)
@@ -143,7 +152,7 @@ for (const language of languages) {
           assert.match(readFileSync(join(directory, '.gitignore'), 'utf8'), /^\.env\*$/m)
           assert.match(readFileSync(join(directory, '.gitignore'), 'utf8'), /^\.wix\/$/m)
           assert.match(readme, /"outputDirectory": "\.\/public"/)
-          assert.match(readme, /owner's migration download/)
+          assert.match(readme, /current migration download/)
         } else {
           assert.match(workflow, /uses: bcomnes\/deploy-to-neocities@v3/)
           assert.match(workflow, /api_key: \$\{\{ secrets.NEOCITIES_API_TOKEN }}/)

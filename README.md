@@ -122,7 +122,8 @@ Use relative links in your content, or include that prefix when building URLs yo
 
 The Wix option sets up hosting.
 Connecting Wix Forms or migrating an existing site takes additional setup.
-Wix starters include an `AGENTS.md` with compatibility notes for working on the site with a coding agent.
+Wix starters include an `AGENTS.md` with compatibility notes and a project-local `$domstack-wix-headless` skill in `.agents/skills/`.
+Use the skill to prepare the frontend, resume with Wix access, and stage a migration before approving production cutover.
 
 ## Skipping installation
 
@@ -141,6 +142,13 @@ Eject adds the default layout and client script and accepts identical integratio
 No stylesheet restoration is needed for Tailwind.
 Normal setup handles eject for you.
 This requires a DOMStack release providing the shared feature helper and the `domstack eject` feature flags.
+
+## Wix migration skill
+
+The canonical skill is maintained in [skills/domstack-wix-headless](skills/domstack-wix-headless/SKILL.md) in this repository.
+Choosing Wix copies it into the new project's `.agents/skills/` directory.
+Generated project copies are vendored snapshots; update the repository version when improving the procedure.
+A personal installation in `~/.codex/skills/` is not required.
 
 ## License
 
