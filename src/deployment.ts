@@ -1,6 +1,6 @@
 import type { Language } from './template.ts'
 import { dependencyVersion } from './dependencies.ts'
-import { wixAgentNotes } from './wix-agents.ts'
+import { wixAgentNotes, wixMigrationSkillFiles } from './wix-agents.ts'
 
 export type Deployment = 'none' | 'github-pages' | 'neocities' | 'wix' | 'cloudflare' | 'vercel' | 'netlify'
 
@@ -313,6 +313,7 @@ See [Workers Static Assets](https://developers.cloudflare.com/workers/static-ass
       engines: { node: '>=24.22.1' },
       files: {
         'AGENTS.md': wixAgentNotes,
+        ...wixMigrationSkillFiles(),
         '.gitignore': `node_modules
 public
 .DS_Store
@@ -357,7 +358,7 @@ Scaffolding adds the local CLI and deployment workflow, but does not create a Wi
 
 For a new Wix project, run \`npm run wix:login\`, then \`npm create @wix/new@latest init\` from this project directory.
 Initialization creates a new Wix project and its \`wix.config.json\`.
-For an existing Wix site's migration, use the owner's migration download's \`wix.config.json\` instead; do not initialize another project.
+For an existing Wix site's migration, use the current migration download's \`wix.config.json\` instead; do not initialize another project.
 Preserve the supplied \`appId\` and \`siteId\`, and set \`site.outputDirectory\` to \`./public\` before deploying:
 
 \`\`\`json
@@ -371,6 +372,23 @@ The starter deliberately leaves that file absent until Wix supplies the real dep
 Run \`npm run deploy\` for a local build and release after setup.
 The CLI's \`release\` command uploads existing output and does not run DOMStack for you.
 During migration, releases target the preview until Wix's completion flow switches the project to production.
+
+### Migrate an existing Wix site
+
+This project includes [DOMStack Wix Headless](.agents/skills/domstack-wix-headless/SKILL.md), a project-local skill for preparing the frontend and completing the migration.
+In your coding agent, ask:
+
+\`\`\`text
+Use $domstack-wix-headless to prepare this DOMStack site for Wix.
+Complete preparation only; do not start migration or deploy yet.
+\`\`\`
+
+Once access is ready, resume the skill to connect the existing business data and deploy a migration preview.
+For a collaborator-managed migration, the demonstrated path uses Website Designer plus Manage headless settings, with the deploying collaborator initiating migration.
+Check the actual permissions; access to an owner-initiated preview can differ from access to the original site.
+Review the preview before authorizing production cutover.
+The skill covers building before static finalization, verifying the production target, subsequent releases, and Switch Back.
+Running the generator only copies these instructions; it does not perform migration or install Wix business SDKs.
 
 ### GitHub Actions
 

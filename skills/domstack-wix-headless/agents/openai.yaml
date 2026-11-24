@@ -1,0 +1,4 @@
+interface:
+  display_name: "DOMStack Wix Headless"
+  short_description: "Prepare DOMStack for Wix hosting and migration"
+  default_prompt: "Use $domstack-wix-headless to prepare this DOMStack app for Wix hosting and guide its migration, connecting only the business features the site needs."

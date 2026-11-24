@@ -56,6 +56,9 @@ try {
     assert.ok(existsSync(join(generator, 'dist', path)), `missing packed dist/${path}`)
   }
   assert.ok(existsSync(join(generator, 'src/index.ts')), 'missing declaration-map source')
+  for (const path of ['SKILL.md', 'agents/openai.yaml', 'references/form-integration.md', 'references/migration.md']) {
+    assert.ok(existsSync(join(generator, 'skills/domstack-wix-headless', path)), `missing packed Wix skill ${path}`)
+  }
   assert.ok(!existsSync(join(generator, 'test')), 'tests should not be published')
   assert.ok(!existsSync(join(generator, 'scripts')), 'development scripts should not be published')
 

@@ -1,7 +1,10 @@
+import { readFileSync } from 'node:fs'
+
 export const wixAgentNotes = `# Wix compatibility notes
 
 This project uses DOMStack to build a static frontend for Wix hosting.
 Check the installed CLI and SDK versions and current Wix documentation when changing integrations or deployment settings.
+For preparation, preview integration, production cutover, and rollback, use [the project migration skill](.agents/skills/domstack-wix-headless/SKILL.md).
 
 1. **Use the DOMStack build.**
    Build pages, styles, scripts, and assets through DOMStack.
@@ -53,24 +56,61 @@ Check the installed CLI and SDK versions and current Wix documentation when chan
     Export actual values through the provider's \`browser\` export; DOMStack handles serialization.
     Check emitted bundle sizes to ensure build-only SDK code is excluded from browser output.
     Rebuild after changes to any form schema or settings read during the build.
-12. **Check migration identities and completion.**
-    A migration preview's deployment IDs can differ from the original site's business API identifiers.
-    Use the correct visitor client and form IDs for the business data being accessed.
-    Complete the migration through Wix's documented process and verify the deployment target afterward.
-13. **Keep interface copy accurate.**
+12. **Separate migration hosting from business identity.**
+    Use the fresh migration download for preview deployment IDs and the original site's visitor client and form IDs for business APIs.
+    Do not reuse IDs from a cancelled or completed migration as a new preview target.
+13. **Check collaborator permissions and preview access.**
+    A collaborator managing migration may need a custom Website Designer role with Site Dashboard → Manage headless settings.
+    Inspect the actual combined permissions; this is broader than a deployment-only role and is not a proven minimum.
+    Prefer having the intended deploying collaborator initiate migration when using this workflow.
+    An owner-initiated preview can deny that collaborator's environment pull and release even when original-site access works.
+    Verify the account and exact preview target before retrying; the CLI's token-renewal message can wrap an access denial.
+    Do not silently switch to owner credentials or cancel and restart migration to bypass the error.
+    Recheck restricted Contacts and submission-history access after role changes and after cutover.
+14. **Build before static migration finalization.**
+    A preview release does not itself authorize replacing the live frontend.
+    Follow the current Complete Migration flow after production cutover is approved.
+    For static output, build and run checks before \`npm run wix -- finalize-migration\`; finalization can release existing output without rebuilding.
+    Inspect the installed CLI when its behavior differs from a generic prompt.
+    Finalization rewrites configuration to the original site before release, so a failure can leave a production target behind.
+    Inspect configuration, migration state, and the live frontend before retrying.
+    Owner approval and technical execution are separate: a permitted collaborator can execute finalization.
+15. **Verify the target for subsequent releases and rollback.**
+    After migration, normal build/release commands target production through the updated configuration.
+    Verify the current account, target, and live frontend before publishing, including when changing operators.
+    Wix's Switch Back control restores the retained Editor frontend; verify the live domain afterward.
+    After switching back, do not deploy with the completed migration's configuration merely because it still targets the original site.
+    Returning to headless requires a fresh migration and fresh preview configuration; retain the DOMStack source.
+16. **Keep interface copy accurate.**
     Remove outdated demo or preview notices when features become available in production.
     Keep disabled and unconfigured states accurate while setup is incomplete.
     Check labels, titles, and metadata as well as visible page text.
-14. **Verify the deployed site.**
+17. **Verify the deployed site.**
     Run \`npm test\` and \`npm run build\` before deployment.
     Check deployed routes, icons, images, fonts, video, and business integrations.
     When authorized to test a form, submit clearly marked synthetic data and verify receipt on the intended form.
-    A successful release does not verify the site's behavior.
+    If the operator cannot read submissions, have the owner or another authorized data viewer confirm receipt.
+    A successful release or frontend success message alone does not verify end-to-end behavior.
 
 ## Official references
 
 - [Deploy your own frontend](https://dev.wix.com/docs/go-headless/wix-managed-headless/other-frameworks/your-own-frontend/deploy-your-own-frontend-with-the-cli)
+- [Collaborator permissions](https://dev.wix.com/docs/go-headless/project-management/invite-collaborators)
 - [CLI login and CI authentication](https://dev.wix.com/docs/wix-cli/command-reference/global-commands/login)
 - [Move an existing site to a custom frontend](https://support.wix.com/en/article/wix-headless-moving-your-site-to-a-custom-frontend)
 - [Media Manager](https://dev.wix.com/docs/overview/site-features-tools/media-manager)
 `
+
+/** Project-local instructions copied only when Wix hosting is selected. */
+export function wixMigrationSkillFiles (): Record<string, string> {
+  const paths = [
+    'SKILL.md',
+    'agents/openai.yaml',
+    'references/form-integration.md',
+    'references/migration.md',
+  ]
+  return Object.fromEntries(paths.map(path => [
+    `.agents/skills/domstack-wix-headless/${path}`,
+    readFileSync(new URL(`../skills/domstack-wix-headless/${path}`, import.meta.url), 'utf8'),
+  ]))
+}
